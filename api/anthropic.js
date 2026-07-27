@@ -1,6 +1,3 @@
-// Proxy serveur vers l'API Anthropic.
-// La clé API reste secrète côté serveur (variable d'environnement ANTHROPIC_API_KEY sur Vercel),
-// jamais exposée au navigateur du client.
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
@@ -8,6 +5,7 @@ export default async function handler(req, res) {
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
+  console.log('DIAGNOSTIC clé API — présente:', !!apiKey, '| longueur:', apiKey ? apiKey.length : 0, '| début:', apiKey ? apiKey.slice(0, 12) : 'aucune');
   if (!apiKey) {
     res.status(500).json({ error: 'Clé API non configurée sur le serveur' });
     return;
@@ -30,4 +28,3 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Erreur de connexion à l\'API Anthropic' });
   }
 }
-
