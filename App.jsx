@@ -3790,7 +3790,7 @@ Usa catKey entre: protein, carb, veg, fruit, dairy, fat, other. Todos los campos
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-5", max_tokens: 2000,
+            model: "claude-sonnet-4-6", max_tokens: 2000,
             messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }]
           })
         });
@@ -4084,7 +4084,7 @@ function PhotoAddPanel({ setState, closeModal, toast }) {
     const response = await fetch("/api/anthropic", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-5", max_tokens: 2000,
+        model: "claude-sonnet-4-6", max_tokens: 2000,
         messages: [{ role: "user", content: [
           { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
           { type: "text", text: aiPrompt }
@@ -5073,7 +5073,7 @@ Todos los campos de texto ("title", "ingredients", "steps", "tags") deben estar 
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-5", max_tokens: 1000,
+            model: "claude-sonnet-4-6", max_tokens: 1000,
             messages: [{ role: "user", content: finalPrompt }]
           })
         });
@@ -5695,7 +5695,7 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo: {"title":"título c
         if (attempt > 0) await sleep(Math.min(1000 * Math.pow(2, attempt - 1), 8000));
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
+          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
         });
         if (!response.ok) { lastErr = new Error('http_' + response.status); continue; }
         const data = await response.json();
@@ -6072,7 +6072,7 @@ Los campos "ingredients" y "steps" deben estar escritos completamente en españo
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-5", max_tokens: 1000,
+            model: "claude-sonnet-4-6", max_tokens: 1000,
             messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }]
           })
         });
@@ -6179,7 +6179,7 @@ Los campos "ingredients" y "steps" deben estar escritos completamente en españo
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-5", max_tokens: 1000,
+            model: "claude-sonnet-4-6", max_tokens: 1000,
             messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }]
           })
         });
@@ -6776,7 +6776,7 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo: {"title":"título c
         if (attempt > 0) await sleep(Math.min(1000 * Math.pow(2, attempt - 1), 8000));
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
+          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
         });
         if (!response.ok) { lastErr = new Error('http_' + response.status); continue; }
         const data = await response.json();
@@ -7077,7 +7077,7 @@ Sé directo, concreto, lenguaje sencillo. Sin relleno.`
       try {
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 500, messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }] })
+          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 500, messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }] })
         });
         const data = await response.json();
         const textBlock = data.content && data.content.find(c => c.type === 'text');
@@ -7277,7 +7277,7 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo, formato exacto: {"r
       try {
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 800, messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }] })
+          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 800, messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }] })
         });
         const data = await response.json();
         const textBlock = data.content && data.content.find(c => c.type === 'text');
@@ -7879,7 +7879,7 @@ function PhotoCompareModal({ photos, closeModal }) {
       const response = await fetch("/api/anthropic", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-5", max_tokens: 400,
+          model: "claude-sonnet-4-6", max_tokens: 400,
           messages: [{ role: "user", content: [
             { type: "image", source: { type: "base64", media_type: 'image/jpeg', data: before.image.split(',')[1] } },
             { type: "image", source: { type: "base64", media_type: 'image/jpeg', data: after.image.split(',')[1] } },
@@ -8756,7 +8756,7 @@ export default function CroquefitApp() {
         const timeoutId = setTimeout(() => controller.abort(), 4000);
         const testResponse = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 1, messages: [{ role: "user", content: "test" }] }),
+          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1, messages: [{ role: "user", content: "test" }] }),
           signal: controller.signal
         });
         clearTimeout(timeoutId);
