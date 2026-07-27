@@ -3787,10 +3787,10 @@ Usa catKey entre: protein, carb, veg, fruit, dairy, fat, other. Todos los campos
 
 
       try {
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
+        const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-4-6", max_tokens: 2000,
+            model: "claude-sonnet-5", max_tokens: 2000,
             messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }]
           })
         });
@@ -4081,10 +4081,10 @@ function PhotoAddPanel({ setState, closeModal, toast }) {
   const msgNoFood = lang === 'en' ? "No food detected in this photo. Try a closer, well-lit shot." : lang === 'es' ? "No se detectó comida en esta foto. Prueba con una toma más cercana y con buena luz." : "Aucun aliment détecté sur cette photo. Réessaie avec une prise plus rapprochée et bien éclairée.";
 
   const callVisionAPI = async (base64, mediaType) => {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch("/api/anthropic", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6", max_tokens: 2000,
+        model: "claude-sonnet-5", max_tokens: 2000,
         messages: [{ role: "user", content: [
           { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
           { type: "text", text: aiPrompt }
@@ -5070,10 +5070,10 @@ Todos los campos de texto ("title", "ingredients", "steps", "tags") deben estar 
       };
       const callRecipeAI = async (extraWarning) => {
         const finalPrompt = (promptByLang[lang] || promptByLang.fr) + (extraWarning || '');
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
+        const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-4-6", max_tokens: 1000,
+            model: "claude-sonnet-5", max_tokens: 1000,
             messages: [{ role: "user", content: finalPrompt }]
           })
         });
@@ -5693,9 +5693,9 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo: {"title":"título c
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         if (attempt > 0) await sleep(Math.min(1000 * Math.pow(2, attempt - 1), 8000));
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
+        const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
+          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
         });
         if (!response.ok) { lastErr = new Error('http_' + response.status); continue; }
         const data = await response.json();
@@ -6069,10 +6069,10 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo, formato exacto:
 Los campos "ingredients" y "steps" deben estar escritos completamente en español, incluso si el nombre de la comida arriba está en otro idioma.`
       };
       try {
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
+        const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-4-6", max_tokens: 1000,
+            model: "claude-sonnet-5", max_tokens: 1000,
             messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }]
           })
         });
@@ -6176,10 +6176,10 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo, formato exacto:
 Los campos "ingredients" y "steps" deben estar escritos completamente en español, incluso si el nombre de la comida arriba está en otro idioma.`
       };
       try {
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
+        const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-4-6", max_tokens: 1000,
+            model: "claude-sonnet-5", max_tokens: 1000,
             messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }]
           })
         });
@@ -6774,9 +6774,9 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo: {"title":"título c
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
         if (attempt > 0) await sleep(Math.min(1000 * Math.pow(2, attempt - 1), 8000));
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
+        const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
+          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
         });
         if (!response.ok) { lastErr = new Error('http_' + response.status); continue; }
         const data = await response.json();
@@ -7075,9 +7075,9 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo:
 Sé directo, concreto, lenguaje sencillo. Sin relleno.`
       };
       try {
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
+        const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 500, messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }] })
+          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 500, messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }] })
         });
         const data = await response.json();
         const textBlock = data.content && data.content.find(c => c.type === 'text');
@@ -7275,9 +7275,9 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo, formato exacto: {"r
     };
     (async () => {
       try {
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
+        const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 800, messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }] })
+          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 800, messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }] })
         });
         const data = await response.json();
         const textBlock = data.content && data.content.find(c => c.type === 'text');
@@ -7876,10 +7876,10 @@ function PhotoCompareModal({ photos, closeModal }) {
       ? `Estas dos fotos son de la misma persona, con ${daysBetween} días de diferencia. ${weightNote} Compáralas de forma honesta y constructiva: cambios visibles en definición muscular, postura, composición corporal. Primero comprueba si la postura, el ángulo, la distancia y la luz son lo bastante parecidos entre las dos fotos para juzgar con justicia — si no lo son (ángulo distinto, luz distinta, distancia distinta), dilo explícitamente y sé extra cauteloso al afirmar cualquier cambio, ya que condiciones distintas pueden simular u ocultar progreso. Recuerda explícitamente que el peso en la báscula no lo dice todo — ganar músculo mientras se pierde grasa puede significar poco o ningún cambio de peso pese a un progreso visible real. Sé alentador pero honesto; si no ves una diferencia clara, o si ${daysBetween} días es muy poco tiempo para un cambio visible, dilo con amabilidad y sugiere paciencia o constancia en vez de inventar progreso. Máximo 3-5 frases cortas, tono de coach cálido, sin markdown.`
       : `Ces deux photos montrent la même personne, à ${daysBetween} jours d'intervalle. ${weightNote} Compare-les de façon honnête et constructive : changements visibles en définition musculaire, posture, composition corporelle. Vérifie d'abord si la posture, l'angle, la distance et l'éclairage sont assez cohérents entre les deux photos pour juger équitablement — si ce n'est pas le cas (angle différent, éclairage différent, distance différente), dis-le explicitement et sois particulièrement prudent avant d'affirmer un changement, car des conditions différentes peuvent simuler ou masquer une vraie progression. Rappelle explicitement que le poids sur la balance ne dit pas tout — prendre du muscle en perdant du gras peut donner un poids quasi inchangé malgré une vraie progression visible. Sois encourageant mais honnête ; si tu ne vois pas de différence claire, ou si ${daysBetween} jours est un intervalle trop court pour un changement visible, dis-le gentiment et suggère patience ou régularité plutôt que d'inventer des progrès. Maximum 3-5 phrases courtes, ton de coach chaleureux, sans markdown.`;
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetch("/api/anthropic", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-6", max_tokens: 400,
+          model: "claude-sonnet-5", max_tokens: 400,
           messages: [{ role: "user", content: [
             { type: "image", source: { type: "base64", media_type: 'image/jpeg', data: before.image.split(',')[1] } },
             { type: "image", source: { type: "base64", media_type: 'image/jpeg', data: after.image.split(',')[1] } },
@@ -8754,9 +8754,9 @@ export default function CroquefitApp() {
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 4000);
-        const testResponse = await fetch("https://api.anthropic.com/v1/messages", {
+        const testResponse = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1, messages: [{ role: "user", content: "test" }] }),
+          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 1, messages: [{ role: "user", content: "test" }] }),
           signal: controller.signal
         });
         clearTimeout(timeoutId);
