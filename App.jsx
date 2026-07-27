@@ -8568,6 +8568,33 @@ async function supabaseSignIn(email, password) {
   return data;
 }
 
+async function supabaseRefreshSession(refreshToken) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY },
+    body: JSON.stringify({ refresh_token: refreshToken })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error('Session expirée');
+  return data;
+}
+
+const SESSION_STORAGE_KEY = 'croquefit-session';
+
+function saveSessionToStorage(session) {
+  try {
+    if (session) localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
+    else localStorage.removeItem(SESSION_STORAGE_KEY);
+  } catch (e) { /* localStorage indisponible : session simplement non persistée */ }
+}
+
+function loadSessionFromStorage() {
+  try {
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) { return null; }
+}
+
 async function supabaseFetchUserData(accessToken, userId) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/user_data?user_id=eq.${userId}&select=*`, {
     headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` }
@@ -8703,6 +8730,7 @@ function AuthScreen({ onAuthenticated }) {
 
 export default function CroquefitApp() {
   const [session, setSession] = useState(null); // { accessToken, refreshToken, user }
+  const [sessionChecked, setSessionChecked] = useState(false); // évite d'afficher l'écran de connexion pendant la vérification initiale
   const [lang, setLang] = useState('fr');
   const [onboarded, setOnboarded] = useState(false);
   const [tourDone, setTourDone] = useState(false);
@@ -8713,6 +8741,28 @@ export default function CroquefitApp() {
   const [toastMsg, setToastMsg] = useState(null);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
+
+
+  // Au premier chargement, on tente de restaurer une session sauvegardée (reste connecté automatiquement)
+  useEffect(() => {
+    (async () => {
+      const saved = loadSessionFromStorage();
+      if (!saved) { setSessionChecked(true); return; }
+      try {
+        const refreshed = await supabaseRefreshSession(saved.refreshToken);
+        setSession({ accessToken: refreshed.access_token, refreshToken: refreshed.refresh_token, user: refreshed.user });
+      } catch (e) {
+        saveSessionToStorage(null); // session expirée ou invalide : on nettoie et on redemande une connexion
+      }
+      setSessionChecked(true);
+    })();
+  }, []);
+
+
+  // Sauvegarde la session à chaque connexion/déconnexion pour rester connecté d'une visite à l'autre
+  useEffect(() => {
+    saveSessionToStorage(session);
+  }, [session]);
 
 
   const toast = (msg) => {
@@ -8748,12 +8798,13 @@ export default function CroquefitApp() {
       } catch (e) {
         // Erreur de chargement : on démarre à zéro pour cette session, silencieusement.
       }
-      // Détection automatique de la disponibilité de l'IA : un test léger et rapide (timeout 4s)
-      // détermine si le mode IA doit être actif ou non, sans jamais demander à l'utilisateur de choisir.
+      // Détection automatique de la disponibilité de l'IA : un test léger (timeout 9s, pour tolérer
+      // un "cold start" de la fonction serveur Vercel juste après un déploiement) détermine si le
+      // mode IA doit être actif ou non, sans jamais demander à l'utilisateur de choisir.
       let aiAvailable = false;
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const timeoutId = setTimeout(() => controller.abort(), 9000);
         const testResponse = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1, messages: [{ role: "user", content: "test" }] }),
@@ -8857,6 +8908,15 @@ export default function CroquefitApp() {
       ))}
     </div>
   );
+
+
+  if (!sessionChecked) {
+    return (
+      <div style={{ background: '#131519', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontFamily: "'JetBrains Mono', monospace", color: '#7d8590', fontSize: 13 }}>Chargement…</div>
+      </div>
+    );
+  }
 
 
   if (!session) {
