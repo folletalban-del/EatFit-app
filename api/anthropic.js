@@ -30,3 +30,4 @@ export default async function handler(req, res) {
     res.status(500).json({ error: 'Erreur de connexion à l\'API Anthropic' });
   }
 }
+
