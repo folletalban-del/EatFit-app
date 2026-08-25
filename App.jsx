@@ -94,7 +94,7 @@ const UI_STRINGS = {
     add_missed_item: "+ Ajouter un aliment manqué par la photo",
     restriction_vegetarian: "Végétarien", restriction_vegan: "Végétalien", restriction_lactose: "Sans lactose",
     restriction_gluten: "Sans gluten", restriction_nuts: "Sans fruits à coque", restriction_fish: "Sans poisson/fruits de mer",
-    no_restrictions_set: "Aucune restriction réglée — modifiable dans Réglages (tape sur le logo Croquefit).",
+    no_restrictions_set: "Aucune restriction réglée — modifiable dans Réglages (tape sur le logo EatFit).",
     no_exercise_data: "Aucune série loggée pour cet exercice pour l'instant.",
     charge_max_lifted: "Charge soulevée", most_recent: "Plus récente", maximum: "Maximum",
     progression: "Progression", volume_max: "Volume max (une séance)", estimated_rm_table: "Table de RM estimée",
@@ -285,7 +285,7 @@ const UI_STRINGS = {
     add_missed_item: "+ Add an item the photo missed",
     restriction_vegetarian: "Vegetarian", restriction_vegan: "Vegan", restriction_lactose: "Lactose-free",
     restriction_gluten: "Gluten-free", restriction_nuts: "Nut-free", restriction_fish: "Fish/shellfish-free",
-    no_restrictions_set: "No restrictions set — editable in Settings (tap the Croquefit logo).",
+    no_restrictions_set: "No restrictions set — editable in Settings (tap the EatFit logo).",
     no_exercise_data: "No sets logged for this exercise yet.",
     charge_max_lifted: "Load lifted", most_recent: "Most recent", maximum: "Maximum",
     progression: "Progression", volume_max: "Max volume (single session)", estimated_rm_table: "Estimated RM table",
@@ -476,7 +476,7 @@ const UI_STRINGS = {
     add_missed_item: "+ Añadir un alimento que la foto no captó",
     restriction_vegetarian: "Vegetariano", restriction_vegan: "Vegano", restriction_lactose: "Sin lactosa",
     restriction_gluten: "Sin gluten", restriction_nuts: "Sin frutos secos", restriction_fish: "Sin pescado/marisco",
-    no_restrictions_set: "Sin restricciones definidas — editable en Ajustes (toca el logo Croquefit).",
+    no_restrictions_set: "Sin restricciones definidas — editable en Ajustes (toca el logo EatFit).",
     no_exercise_data: "Aún no hay series registradas para este ejercicio.",
     charge_max_lifted: "Carga levantada", most_recent: "Más reciente", maximum: "Máximo",
     progression: "Progresión", volume_max: "Volumen máximo (una sesión)", estimated_rm_table: "Tabla de RM estimada",
@@ -2209,7 +2209,7 @@ const NOTIF_MESSAGES = {
 function notifMessage(key, lang) {
   lang = lang || 'fr';
   const dict = NOTIF_MESSAGES[lang] || NOTIF_MESSAGES.fr;
-  return pick(dict[key] || NOTIF_MESSAGES.fr[key] || ['CROQUEFIT']);
+  return pick(dict[key] || NOTIF_MESSAGES.fr[key] || ['EATFIT']);
 }
 
 
@@ -8579,6 +8579,32 @@ async function supabaseRefreshSession(refreshToken) {
   return data;
 }
 
+async function supabaseRequestPasswordReset(email) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/recover`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY },
+    body: JSON.stringify({ email, redirect_to: window.location.origin })
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.msg || data.error_description || data.error || 'Erreur lors de la demande de réinitialisation');
+  }
+}
+
+async function supabaseUpdatePassword(accessToken, newPassword) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${accessToken}`
+    },
+    body: JSON.stringify({ password: newPassword })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.msg || data.error_description || data.error || 'Erreur mise à jour du mot de passe');
+  return data;
+}
+
 const SESSION_STORAGE_KEY = 'croquefit-session';
 
 function saveSessionToStorage(session) {
@@ -8639,7 +8665,7 @@ async function supabaseDeleteUserData(accessToken, userId) {
 
 /* ===================== ÉCRAN DE CONNEXION ===================== */
 function AuthScreen({ onAuthenticated }) {
-  const [mode, setMode] = useState('login'); // 'login' | 'signup'
+  const [mode, setMode] = useState('login'); // 'login' | 'signup' | 'forgot'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
@@ -8649,6 +8675,21 @@ function AuthScreen({ onAuthenticated }) {
 
   const submit = async () => {
     setError(''); setInfo('');
+
+    if (mode === 'forgot') {
+      if (!email) { setError("Renseigne ton email."); return; }
+      setLoading(true);
+      try {
+        await supabaseRequestPasswordReset(email);
+        setInfo("Si un compte existe avec cet email, un lien de réinitialisation vient d'être envoyé. Vérifie ta boîte mail (et tes spams).");
+      } catch (e) {
+        setError(e.message || "Une erreur est survenue.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     if (!email || !password) { setError("Renseigne ton email et ton mot de passe."); return; }
     if (mode === 'signup' && password !== confirmPw) { setError("Les mots de passe ne correspondent pas."); return; }
     if (password.length < 6) { setError("Le mot de passe doit faire au moins 6 caractères."); return; }
@@ -8686,10 +8727,10 @@ function AuthScreen({ onAuthenticated }) {
       <div style={{ width: '100%', maxWidth: 380 }}>
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
           <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 32, fontWeight: 700, letterSpacing: '0.02em' }}>
-            Croque<span style={{ color: '#2f9e6e' }}>fit</span>
+            Eat<span style={{ color: '#2f9e6e' }}>Fit</span>
           </div>
           <div style={{ fontSize: 13, color: '#7d8590', marginTop: 6 }}>
-            {mode === 'login' ? 'Connecte-toi pour continuer' : 'Crée ton compte'}
+            {mode === 'login' ? 'Connecte-toi pour continuer' : mode === 'signup' ? 'Crée ton compte' : 'Réinitialiser ton mot de passe'}
           </div>
         </div>
 
@@ -8697,18 +8738,26 @@ function AuthScreen({ onAuthenticated }) {
           <Field label="Email">
             <input style={inputStyle} type="email" autoCapitalize="none" placeholder="ton@email.com" value={email} onChange={e => setEmail(e.target.value)} />
           </Field>
-          <Field label="Mot de passe">
-            <input style={inputStyle} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
-          </Field>
+          {mode !== 'forgot' && (
+            <Field label="Mot de passe">
+              <input style={inputStyle} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
+            </Field>
+          )}
           {mode === 'signup' && (
             <Field label="Confirme le mot de passe">
               <input style={inputStyle} type="password" placeholder="••••••••" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} />
             </Field>
           )}
+          {mode === 'login' && (
+            <div style={{ textAlign: 'right', marginBottom: 14, marginTop: -6 }}>
+              <span style={{ color: '#7d8590', cursor: 'pointer', fontSize: 12.5, textDecoration: 'underline' }}
+                onClick={() => { setMode('forgot'); setError(''); setInfo(''); }}>Mot de passe oublié ?</span>
+            </div>
+          )}
           {error && <div style={{ color: '#e25555', fontSize: 13, marginBottom: 14 }}>{error}</div>}
           {info && <div style={{ color: '#2f9e6e', fontSize: 13, marginBottom: 14 }}>{info}</div>}
           <Btn block onClick={submit} disabled={loading}>
-            {loading ? 'Un instant…' : (mode === 'login' ? 'Se connecter' : "S'inscrire")}
+            {loading ? 'Un instant…' : (mode === 'login' ? 'Se connecter' : mode === 'signup' ? "S'inscrire" : 'Envoyer le lien')}
           </Btn>
         </Card>
 
@@ -8717,10 +8766,12 @@ function AuthScreen({ onAuthenticated }) {
             <>Pas encore de compte ?{' '}
               <span style={{ color: '#2f9e6e', cursor: 'pointer', fontWeight: 600 }} onClick={() => { setMode('signup'); setError(''); setInfo(''); }}>S'inscrire</span>
             </>
-          ) : (
+          ) : mode === 'signup' ? (
             <>Déjà un compte ?{' '}
               <span style={{ color: '#2f9e6e', cursor: 'pointer', fontWeight: 600 }} onClick={() => { setMode('login'); setError(''); setInfo(''); }}>Se connecter</span>
             </>
+          ) : (
+            <span style={{ color: '#2f9e6e', cursor: 'pointer', fontWeight: 600 }} onClick={() => { setMode('login'); setError(''); setInfo(''); }}>Retour à la connexion</span>
           )}
         </div>
       </div>
@@ -8728,9 +8779,61 @@ function AuthScreen({ onAuthenticated }) {
   );
 }
 
-export default function CroquefitApp() {
+function PasswordResetScreen({ accessToken, onDone }) {
+  const [password, setPassword] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async () => {
+    setError('');
+    if (password.length < 6) { setError("Le mot de passe doit faire au moins 6 caractères."); return; }
+    if (password !== confirmPw) { setError("Les mots de passe ne correspondent pas."); return; }
+    setLoading(true);
+    try {
+      await supabaseUpdatePassword(accessToken, password);
+      onDone();
+    } catch (e) {
+      setError(e.message || "Une erreur est survenue.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{
+      fontFamily: "'Inter', system-ui, sans-serif", background: 'radial-gradient(circle at 50% 0%, rgba(47,158,110,0.08), transparent 45%), #131519',
+      color: '#eef0f2', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, boxSizing: 'border-box'
+    }}>
+      <div style={{ width: '100%', maxWidth: 380 }}>
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 32, fontWeight: 700, letterSpacing: '0.02em' }}>
+            Eat<span style={{ color: '#2f9e6e' }}>Fit</span>
+          </div>
+          <div style={{ fontSize: 13, color: '#7d8590', marginTop: 6 }}>Choisis un nouveau mot de passe</div>
+        </div>
+        <Card>
+          <Field label="Nouveau mot de passe">
+            <input style={inputStyle} type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
+          </Field>
+          <Field label="Confirme le nouveau mot de passe">
+            <input style={inputStyle} type="password" placeholder="••••••••" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} />
+          </Field>
+          {error && <div style={{ color: '#e25555', fontSize: 13, marginBottom: 14 }}>{error}</div>}
+          <Btn block onClick={submit} disabled={loading}>
+            {loading ? 'Un instant…' : 'Valider le nouveau mot de passe'}
+          </Btn>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+export default function EatFitApp() {
   const [session, setSession] = useState(null); // { accessToken, refreshToken, user }
   const [sessionChecked, setSessionChecked] = useState(false); // évite d'afficher l'écran de connexion pendant la vérification initiale
+  const [recoveryToken, setRecoveryToken] = useState(null); // token présent si l'utilisateur arrive via un lien "mot de passe oublié"
+  const [recoveryDone, setRecoveryDone] = useState(false);
   const [lang, setLang] = useState('fr');
   const [onboarded, setOnboarded] = useState(false);
   const [tourDone, setTourDone] = useState(false);
@@ -8741,6 +8844,19 @@ export default function CroquefitApp() {
   const [toastMsg, setToastMsg] = useState(null);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
+
+
+  // Détecte un lien de réinitialisation de mot de passe (Supabase redirige vers l'app avec
+  // #access_token=...&type=recovery dans l'URL). Si présent, on affiche l'écran dédié avant
+  // même de vérifier une session classique.
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.includes('type=recovery')) {
+      const params = new URLSearchParams(hash.replace('#', ''));
+      const token = params.get('access_token');
+      if (token) setRecoveryToken(token);
+    }
+  }, []);
 
 
   // Au premier chargement, on tente de restaurer une session sauvegardée (reste connecté automatiquement)
@@ -8767,8 +8883,8 @@ export default function CroquefitApp() {
 
   const toast = (msg) => {
     setToastMsg(msg);
-    clearTimeout(window._croquefitToastTimer);
-    window._croquefitToastTimer = setTimeout(() => setToastMsg(null), 8000);
+    clearTimeout(window._eatfitToastTimer);
+    window._eatfitToastTimer = setTimeout(() => setToastMsg(null), 8000);
   };
   const openModal = (content) => setModalContent(content);
   const closeModal = () => setModalContent(null);
@@ -8859,15 +8975,15 @@ export default function CroquefitApp() {
 
     const checkAndNotify = () => {
       if (Notification.permission !== 'granted') return;
-      const lastKey = window._croquefitLastNotifKey;
-      const lastDate = window._croquefitLastNotifDate;
+      const lastKey = window._eatfitLastNotifKey;
+      const lastDate = window._eatfitLastNotifDate;
       const notifKey = determineContextualNotification(state, lastKey, lastDate);
       if (!notifKey) return;
       const msg = notifMessage(notifKey, lang);
       try {
-        new Notification('CROQUEFIT', { body: msg, icon: undefined, tag: 'croquefit-reminder' });
-        window._croquefitLastNotifKey = notifKey;
-        window._croquefitLastNotifDate = todayStr();
+        new Notification('EATFIT', { body: msg, icon: undefined, tag: 'eatfit-reminder' });
+        window._eatfitLastNotifKey = notifKey;
+        window._eatfitLastNotifDate = todayStr();
       } catch (e) { /* navigateur ne supporte pas, on ignore silencieusement */ }
     };
 
@@ -8909,6 +9025,14 @@ export default function CroquefitApp() {
     </div>
   );
 
+
+  if (recoveryToken && !recoveryDone) {
+    return <PasswordResetScreen accessToken={recoveryToken} onDone={() => {
+      setRecoveryDone(true);
+      setRecoveryToken(null);
+      window.history.replaceState(null, '', window.location.pathname);
+    }} />;
+  }
 
   if (!sessionChecked) {
     return (
@@ -9026,7 +9150,7 @@ export default function CroquefitApp() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 16px', position: 'sticky', top: 0, zIndex: 20, background: 'linear-gradient(180deg, #15171a 85%, transparent)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
           <div onClick={() => navigate('settings')} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
             <span style={{ width: 9, height: 9, borderRadius: 5, background: '#2f9e6e', display: 'inline-block', boxShadow: '0 0 8px rgba(47,158,110,0.55)' }} />
-            <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: '0.02em' }}>Croque<span style={{ color: '#2f9e6e' }}>fit</span></div>
+            <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: '0.02em' }}>Eat<span style={{ color: '#2f9e6e' }}>Fit</span></div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <FlagSelector />
