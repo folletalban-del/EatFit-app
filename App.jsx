@@ -5,6 +5,10 @@ import React, { useState, useEffect, useRef, createContext, useContext } from 'r
 const LangContext = createContext({ lang: 'fr', t: (k) => k });
 function useLang() { return useContext(LangContext); }
 
+/* ===================== AXES / MODULES ACTIVABLES ===================== */
+const DEFAULT_MODULES = { antiGaspi: true, plan: true, sport: true };
+const EMPTY_MODULES = { antiGaspi: false, plan: false, sport: false };
+
 
 const UI_STRINGS = {
   fr: {
@@ -25,6 +29,7 @@ const UI_STRINGS = {
     bmi_warn_underweight_lose: "⚠ Ton IMC indique déjà une insuffisance pondérale. Perdre du poids n'est pas recommandé dans ton cas — parles-en à un médecin avant de continuer.",
     bmi_warn_target_underweight: "⚠ Le poids cible que tu vises correspondrait à une insuffisance pondérale (IMC < 18.5). Réfléchis-y à deux fois, ou vois ça avec un pro de santé.",
     onboard_title5: "Niveau d'activité.", onboard_sub5: 'Et non, marcher jusqu\'au frigo ne compte pas comme "actif".',
+    onboard_title6: "Une appli à la carte.", onboard_sub6: "Coche ce qui t'intéresse. Le reste disparaît, pas la peine d'encombrer l'appli avec ce que tu n'utiliseras jamais.",
     onboard_validate: "Valider mon profil",
     disclaimer_text: "Je certifie avoir le sens de l'humour, que je ne vais pas pleurer à la première vanne sur ma flemme, et que si je me blesse en faisant des pompes, c'est ma faute, pas celle de l'appli.",
     disclaimer_legal: "Cette appli utilise l'humour et le second degré à des fins de motivation. Les commentaires ne doivent pas être pris au premier degré. Consulte un médecin avant d'entreprendre tout changement de régime ou d'activité physique.",
@@ -40,6 +45,10 @@ const UI_STRINGS = {
     goal_maintain: "Maintenir", goal_maintain_d: "Stabilité, pas de chichi",
     goal_bulk: "Prendre du muscle", goal_bulk_d: "Surplus calorique propre",
     tab_home: "Accueil", tab_pantry: "Placard", tab_nutrition: "Nutrition", tab_workout: "Sport", tab_progress: "Progrès",
+    modules_antigaspi_label: "Anti-gaspi", modules_antigaspi_desc: "Gérer ton placard/frigo et éviter de jeter",
+    modules_plan_label: "Plan alimentaire", modules_plan_desc: "Suivi nutrition, calories, recettes",
+    modules_sport_label: "Sport", modules_sport_desc: "Séances, programme, progression",
+    modules_pick_one: "Coche au moins un axe pour continuer.",
     pantry_intro: "Ici, on regarde ensemble ce que t'as déjà chez toi — placard, frigo, tout. T'inquiète, je te juge pas sur le Nutella ou les gâteaux planqués derrière les pâtes. Sois franc, entre nous ça reste 🤫 Pense à renseigner la DLC quand tu peux, ça sert vraiment. Et non, le Smecta, c'est pas un complément alimentaire, même si je sais que t'y as pensé 😜",
     tour_pantry_title: "OK {name}, on continue.", tour_pantry_desc: "Première étape : ton placard. C'est là qu'on note ce que t'as déjà chez toi — placard, frigo, tout. Pas de jugement sur le Nutella caché derrière les pâtes, promis.",
     tour_nutrition_title: "Ensuite, la nutrition.", tour_nutrition_desc: "Ici tu notes ce que tu manges vraiment, jour après jour. C'est différent du placard : le placard c'est ton stock, la nutrition c'est ton journal.",
@@ -216,6 +225,7 @@ const UI_STRINGS = {
     bmi_warn_underweight_lose: "⚠ Your BMI already indicates underweight. Losing more isn't recommended in your case — talk to a doctor before continuing.",
     bmi_warn_target_underweight: "⚠ The target weight you're aiming for would put you in the underweight range (BMI < 18.5). Think it over, or check with a health professional.",
     onboard_title5: "Activity level.", onboard_sub5: 'And no, walking to the fridge doesn\'t count as "active".',
+    onboard_title6: "An à-la-carte app.", onboard_sub6: "Check what interests you. The rest disappears — no point cluttering the app with stuff you'll never use.",
     onboard_validate: "Confirm my profile",
     disclaimer_text: "I certify that I have a sense of humor, that I won't cry at the first joke about my laziness, and that if I hurt myself doing push-ups, it's my fault, not the app's.",
     disclaimer_legal: "This app uses humor and sarcasm for motivational purposes. Comments should not be taken literally. Consult a doctor before starting any diet or exercise changes.",
@@ -231,6 +241,10 @@ const UI_STRINGS = {
     goal_maintain: "Maintain", goal_maintain_d: "Stability, no fuss",
     goal_bulk: "Build muscle", goal_bulk_d: "Clean calorie surplus",
     tab_home: "Home", tab_pantry: "Pantry", tab_nutrition: "Nutrition", tab_workout: "Workout", tab_progress: "Progress",
+    modules_antigaspi_label: "No food waste", modules_antigaspi_desc: "Manage your pantry/fridge and avoid throwing food out",
+    modules_plan_label: "Meal plan", modules_plan_desc: "Nutrition tracking, calories, recipes",
+    modules_sport_label: "Workout", modules_sport_desc: "Sessions, program, progress",
+    modules_pick_one: "Check at least one area to continue.",
     pantry_intro: "This is where we look at what you've actually got at home — cupboard, fridge, all of it. Don't worry, no judgment on the Nutella or the cookies hiding behind the pasta. Be honest, it stays between us 🤫 Try to fill in the expiry date when you can, it actually helps. And no, that anti-diarrhea medicine doesn't count as a dietary supplement, even though I know you thought about it 😜",
     tour_pantry_title: "Alright {name}, let's keep going.", tour_pantry_desc: "First stop: your pantry. This is where we log what you've actually got at home — cupboard, fridge, all of it. No judgment on the Nutella hiding behind the pasta, promise.",
     tour_nutrition_title: "Next, nutrition.", tour_nutrition_desc: "This is where you log what you actually eat, day by day. Different from the pantry: pantry is your stock, nutrition is your journal.",
@@ -407,6 +421,7 @@ const UI_STRINGS = {
     bmi_warn_underweight_lose: "⚠ Tu IMC ya indica bajo peso. No se recomienda perder más en tu caso — habla con un médico antes de continuar.",
     bmi_warn_target_underweight: "⚠ El peso objetivo que buscas te pondría en bajo peso (IMC < 18.5). Piénsalo bien, o consúltalo con un profesional de la salud.",
     onboard_title5: "Nivel de actividad.", onboard_sub5: 'Y no, caminar hasta la nevera no cuenta como "activo".',
+    onboard_title6: "Una app a la carta.", onboard_sub6: "Marca lo que te interesa. El resto desaparece, no hace falta llenar la app de cosas que nunca vas a usar.",
     onboard_validate: "Confirmar mi perfil",
     disclaimer_text: "Certifico que tengo sentido del humor, que no voy a llorar con la primera broma sobre mi pereza, y que si me lastimo haciendo flexiones, es mi culpa, no de la app.",
     disclaimer_legal: "Esta app utiliza el humor y la ironía con fines motivacionales. Los comentarios no deben tomarse al pie de la letra. Consulta a un médico antes de iniciar cualquier cambio de dieta o actividad física.",
@@ -422,6 +437,10 @@ const UI_STRINGS = {
     goal_maintain: "Mantener", goal_maintain_d: "Estabilidad, sin complicaciones",
     goal_bulk: "Ganar músculo", goal_bulk_d: "Superávit calórico limpio",
     tab_home: "Inicio", tab_pantry: "Despensa", tab_nutrition: "Nutrición", tab_workout: "Deporte", tab_progress: "Progreso",
+    modules_antigaspi_label: "Anti-desperdicio", modules_antigaspi_desc: "Gestiona tu despensa/nevera y evita tirar comida",
+    modules_plan_label: "Plan alimentario", modules_plan_desc: "Seguimiento de nutrición, calorías, recetas",
+    modules_sport_label: "Deporte", modules_sport_desc: "Sesiones, programa, progreso",
+    modules_pick_one: "Marca al menos un área para continuar.",
     pantry_intro: "Aquí vemos juntos lo que ya tienes en casa — armario, nevera, todo. Tranqui, no te voy a juzgar por el Nutella o las galletas escondidas detrás de la pasta. Sé sincero, esto queda entre nosotros 🤫 Intenta poner la fecha de caducidad cuando puedas, de verdad sirve de algo. Y no, ese medicamento antidiarreico no cuenta como suplemento alimenticio, aunque sé que lo has pensado 😜",
     tour_pantry_title: "Vale {name}, seguimos.", tour_pantry_desc: "Primera parada: tu despensa. Aquí anotamos lo que ya tienes en casa — armario, nevera, todo. Sin juicios sobre el Nutella escondido detrás de la pasta, prometido.",
     tour_nutrition_title: "Ahora, la nutrición.", tour_nutrition_desc: "Aquí anotas lo que realmente comes, día a día. Distinto de la despensa: la despensa es tu stock, la nutrición es tu diario.",
@@ -2894,13 +2913,14 @@ function getOnboardingCoachNote(step, profile, lang) {
    Placard → Nutrition → Sport → Progrès à la suite, dans la continuité du profil qu'on vient de remplir. */
 function GuidedTour({ lang, profile, onFinish }) {
   const [step, setStep] = useState(0);
-  const total = 4;
+  const mods = profile.modules || DEFAULT_MODULES;
   const steps = [
-    { emoji: '📦', titleKey: 'tour_pantry_title', descKey: 'tour_pantry_desc' },
-    { emoji: '🍽️', titleKey: 'tour_nutrition_title', descKey: 'tour_nutrition_desc' },
-    { emoji: '🏋️', titleKey: 'tour_workout_title', descKey: 'tour_workout_desc' },
-    { emoji: '📈', titleKey: 'tour_progress_title', descKey: 'tour_progress_desc' }
-  ];
+    mods.antiGaspi && { emoji: '📦', titleKey: 'tour_pantry_title', descKey: 'tour_pantry_desc' },
+    mods.plan && { emoji: '🍽️', titleKey: 'tour_nutrition_title', descKey: 'tour_nutrition_desc' },
+    mods.sport && { emoji: '🏋️', titleKey: 'tour_workout_title', descKey: 'tour_workout_desc' },
+    mods.sport && { emoji: '📈', titleKey: 'tour_progress_title', descKey: 'tour_progress_desc' }
+  ].filter(Boolean);
+  const total = steps.length;
   const current = steps[step];
   const isLast = step === total - 1;
 
@@ -2933,16 +2953,26 @@ function Onboarding({ profile, setProfile, onFinish }) {
   const { lang } = useLang();
   const [step, setStep] = useState(0);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
-  const total = 6;
+  const total = 7;
+  const mods = profile.modules || DEFAULT_MODULES;
+  const needsGoalActivity = !!(mods.plan || mods.sport);
 
 
   const next = () => {
     if (step === 1 && !profile.age) { return; }
     if (step === 2 && (!profile.height || !profile.weight)) { return; }
-    if (step === 3 && !profile.goal) { return; }
-    setStep(Math.min(total - 1, step + 1));
+    if (step === 3 && !(profile.modules && Object.values(profile.modules).some(Boolean))) { return; }
+    if (step === 4 && !profile.goal) { return; }
+    let n = step + 1;
+    if (n === 4 && !needsGoalActivity) n = 6;
+    setStep(Math.min(total - 1, n));
   };
-  const back = () => setStep(Math.max(0, step - 1));
+  const toggleModule = (key) => setProfile(p => ({ ...p, modules: { ...(p.modules || DEFAULT_MODULES), [key]: !(p.modules || DEFAULT_MODULES)[key] } }));
+  const back = () => {
+    let n = step - 1;
+    if (step === 6 && !needsGoalActivity) n = 3;
+    setStep(Math.max(0, n));
+  };
 
 
   const progress = Array.from({ length: total }, (_, i) => (
@@ -3041,6 +3071,30 @@ function Onboarding({ profile, setProfile, onFinish }) {
       </>
     );
   } else if (step === 3) {
+    const mods2 = profile.modules || DEFAULT_MODULES;
+    const noneChecked = !Object.values(mods2).some(Boolean);
+    content = (
+      <>
+        <h1 style={titleStyle}>{t(lang, 'onboard_title6')}</h1>
+        <p style={subStyle}>{t(lang, 'onboard_sub6')}</p>
+        <div style={{ flex: 1 }}>
+          <ChoiceCard fullWidth label={t(lang, 'modules_antigaspi_label')} desc={t(lang, 'modules_antigaspi_desc')}
+            selected={!!mods2.antiGaspi} onClick={() => toggleModule('antiGaspi')} />
+          <ChoiceCard fullWidth label={t(lang, 'modules_plan_label')} desc={t(lang, 'modules_plan_desc')}
+            selected={!!mods2.plan} onClick={() => toggleModule('plan')} />
+          <ChoiceCard fullWidth label={t(lang, 'modules_sport_label')} desc={t(lang, 'modules_sport_desc')}
+            selected={!!mods2.sport} onClick={() => toggleModule('sport')} />
+        </div>
+        {noneChecked && (
+          <p style={{ fontSize: 12.5, color: '#e2b13c', marginBottom: 10 }}>{t(lang, 'modules_pick_one')}</p>
+        )}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Btn variant="ghost" onClick={back} style={{ flex: 1 }}>{t(lang, 'back')}</Btn>
+          <Btn onClick={next} style={{ flex: 2 }} disabled={noneChecked}>{t(lang, 'next')}</Btn>
+        </div>
+      </>
+    );
+  } else if (step === 4) {
     content = (
       <>
         <h1 style={titleStyle}>{t(lang, 'onboard_title4')}</h1>
@@ -3075,7 +3129,7 @@ function Onboarding({ profile, setProfile, onFinish }) {
         </div>
       </>
     );
-  } else if (step === 4) {
+  } else if (step === 5) {
     content = (
       <>
         <h1 style={titleStyle}>{t(lang, 'onboard_title5')}</h1>
@@ -3424,6 +3478,7 @@ function lowStockItems(pantry) {
 }
 function HomeView({ state, navigate, setState, toast, openModal, closeModal }) {
   const { lang } = useLang();
+  const mods = state.settings.modules || DEFAULT_MODULES;
   const { profile, foodLog, workouts, pantry } = state;
   const todayLogs = foodLog.filter(f => f.date === todayStr());
   const totalCal = todayLogs.reduce((s, f) => s + (f.calories || 0), 0);
@@ -3463,6 +3518,7 @@ function HomeView({ state, navigate, setState, toast, openModal, closeModal }) {
       <LiveClock lang={lang} />
 
 
+      {mods.plan && (
       <Card>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
           <div style={{ position: 'relative', width: 128, height: 128, marginBottom: 14 }}>
@@ -3490,8 +3546,10 @@ function HomeView({ state, navigate, setState, toast, openModal, closeModal }) {
           </div>
         </div>
       </Card>
+      )}
 
 
+      {mods.plan && (
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, margin: '14px 0' }}>
         <div onClick={() => navigate('nutrition')} style={{ background: '#20242a', border: '1px solid #2e333a', borderRadius: 16, boxShadow: '0 2px 10px rgba(0,0,0,0.18)', padding: 14, cursor: 'pointer' }}>
           <div style={{ fontSize: 11, color: '#7d8590', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: 8 }}>💧 {t(lang, 'hydration')}</div>
@@ -3521,8 +3579,11 @@ function HomeView({ state, navigate, setState, toast, openModal, closeModal }) {
           )}
         </div>
       </div>
+      )}
 
 
+      {mods.plan && (
+      <>
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', margin: '22px 0 12px' }}>
         <h2 style={{ fontSize: 15, color: '#eef0f2', margin: 0, fontFamily: "'Oswald', sans-serif", textTransform: 'uppercase' }}>{t(lang, 'todays_meals')}</h2>
         <span style={{ fontSize: 12, color: '#7d8590' }}>{todayLogs.length} {t(lang, todayLogs.length > 1 ? 'meals_plural' : 'meal_singular')}</span>
@@ -3545,14 +3606,16 @@ function HomeView({ state, navigate, setState, toast, openModal, closeModal }) {
           ⚠ {t(lang, 'low_stock_warning').replace('{item}', lowStock[0].name)}
         </div>
       )}
+      </>
+      )}
 
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, margin: '14px 0' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${[mods.plan, mods.sport, mods.antiGaspi].filter(Boolean).length || 1}, 1fr)`, gap: 8, margin: '14px 0' }}>
         {[
-          { val: todayLogs.length, lbl: t(lang, 'today_meals_noted') },
-          { val: todayWorkout ? '✓' : '—', lbl: t(lang, 'today_workout') },
-          { val: pantry.length, lbl: t(lang, 'pantry_items') }
-        ].map((k, i) => (
+          mods.plan && { val: todayLogs.length, lbl: t(lang, 'today_meals_noted') },
+          mods.sport && { val: todayWorkout ? '✓' : '—', lbl: t(lang, 'today_workout') },
+          mods.antiGaspi && { val: pantry.length, lbl: t(lang, 'pantry_items') }
+        ].filter(Boolean).map((k, i) => (
           <div key={i} style={{ background: '#20242a', border: '1px solid #2e333a', borderRadius: 14, boxShadow: '0 2px 10px rgba(0,0,0,0.18)', padding: '12px 10px', textAlign: 'center' }}>
             <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 19, fontWeight: 700 }}>{k.val}</div>
             <div style={{ fontSize: 10, color: '#7d8590', textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: 2 }}>{k.lbl}</div>
@@ -3561,7 +3624,7 @@ function HomeView({ state, navigate, setState, toast, openModal, closeModal }) {
       </div>
 
 
-      {!todayWorkout && (
+      {mods.sport && !todayWorkout && (
         <Card>
           <CardTitle>{t(lang, 'coach_says')}</CardTitle>
           <p style={{ fontSize: 14, lineHeight: 1.5 }}>{verdict('workoutSkippedNudge', lang)}</p>
@@ -3570,7 +3633,7 @@ function HomeView({ state, navigate, setState, toast, openModal, closeModal }) {
       )}
 
 
-      {expiringSoon.length > 0 && (
+      {mods.antiGaspi && expiringSoon.length > 0 && (
         <Card>
           <CardTitle>{t(lang, 'expiring_soon')}</CardTitle>
           {expiringSoon.slice(0, 3).map(it => (
@@ -3790,7 +3853,7 @@ Usa catKey entre: protein, carb, veg, fruit, dairy, fat, other. Todos los campos
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-4-6", max_tokens: 2000,
+            model: "claude-sonnet-5", max_tokens: 2000,
             messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }]
           })
         });
@@ -4084,7 +4147,7 @@ function PhotoAddPanel({ setState, closeModal, toast }) {
     const response = await fetch("/api/anthropic", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-6", max_tokens: 2000,
+        model: "claude-sonnet-5", max_tokens: 2000,
         messages: [{ role: "user", content: [
           { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
           { type: "text", text: aiPrompt }
@@ -5073,7 +5136,7 @@ Todos los campos de texto ("title", "ingredients", "steps", "tags") deben estar 
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-4-6", max_tokens: 1000,
+            model: "claude-sonnet-5", max_tokens: 1000,
             messages: [{ role: "user", content: finalPrompt }]
           })
         });
@@ -5695,7 +5758,7 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo: {"title":"título c
         if (attempt > 0) await sleep(Math.min(1000 * Math.pow(2, attempt - 1), 8000));
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
+          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
         });
         if (!response.ok) { lastErr = new Error('http_' + response.status); continue; }
         const data = await response.json();
@@ -6072,7 +6135,7 @@ Los campos "ingredients" y "steps" deben estar escritos completamente en españo
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-4-6", max_tokens: 1000,
+            model: "claude-sonnet-5", max_tokens: 1000,
             messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }]
           })
         });
@@ -6179,7 +6242,7 @@ Los campos "ingredients" y "steps" deben estar escritos completamente en españo
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-4-6", max_tokens: 1000,
+            model: "claude-sonnet-5", max_tokens: 1000,
             messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }]
           })
         });
@@ -6776,7 +6839,7 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo: {"title":"título c
         if (attempt > 0) await sleep(Math.min(1000 * Math.pow(2, attempt - 1), 8000));
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
+          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
         });
         if (!response.ok) { lastErr = new Error('http_' + response.status); continue; }
         const data = await response.json();
@@ -7077,7 +7140,7 @@ Sé directo, concreto, lenguaje sencillo. Sin relleno.`
       try {
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 500, messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }] })
+          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 500, messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }] })
         });
         const data = await response.json();
         const textBlock = data.content && data.content.find(c => c.type === 'text');
@@ -7277,7 +7340,7 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo, formato exacto: {"r
       try {
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 800, messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }] })
+          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 800, messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }] })
         });
         const data = await response.json();
         const textBlock = data.content && data.content.find(c => c.type === 'text');
@@ -7879,7 +7942,7 @@ function PhotoCompareModal({ photos, closeModal }) {
       const response = await fetch("/api/anthropic", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-6", max_tokens: 400,
+          model: "claude-sonnet-5", max_tokens: 400,
           messages: [{ role: "user", content: [
             { type: "image", source: { type: "base64", media_type: 'image/jpeg', data: before.image.split(',')[1] } },
             { type: "image", source: { type: "base64", media_type: 'image/jpeg', data: after.image.split(',')[1] } },
@@ -8340,6 +8403,45 @@ function SettingsView({ state, setState, openModal, closeModal, toast, session, 
 
 
       <Card>
+        <CardTitle>🎛️ Mes axes</CardTitle>
+        <p style={{ fontSize: 12.5, color: '#7d8590', lineHeight: 1.4, marginBottom: 10 }}>Choisis ce qui t'intéresse. Les onglets liés à ce que tu décoches disparaissent de l'appli.</p>
+        {[
+          { key: 'antiGaspi', label: t(lang, 'modules_antigaspi_label'), desc: t(lang, 'modules_antigaspi_desc') },
+          { key: 'plan', label: t(lang, 'modules_plan_label'), desc: t(lang, 'modules_plan_desc') },
+          { key: 'sport', label: t(lang, 'modules_sport_label'), desc: t(lang, 'modules_sport_desc') }
+        ].map(m => {
+          const mods = settings.modules || DEFAULT_MODULES;
+          const active = !!mods[m.key];
+          const isLastActive = active && Object.values(mods).filter(Boolean).length <= 1;
+          return (
+            <div key={m.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderTop: '1px solid #262b32' }}>
+              <div style={{ paddingRight: 12 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600 }}>{m.label}</div>
+                <div style={{ fontSize: 11.5, color: '#7d8590', marginTop: 2 }}>{m.desc}</div>
+              </div>
+              <div
+                onClick={() => {
+                  if (isLastActive) { toast(t(lang, 'modules_pick_one')); return; }
+                  setState(s => ({ ...s, settings: { ...s.settings, modules: { ...(s.settings.modules || DEFAULT_MODULES), [m.key]: !active } } }));
+                }}
+                style={{
+                  width: 46, height: 26, borderRadius: 15, background: active ? '#2f9e6e' : '#34393f',
+                  position: 'relative', cursor: 'pointer', flexShrink: 0, transition: 'background .15s',
+                  opacity: isLastActive ? 0.6 : 1
+                }}
+              >
+                <div style={{
+                  width: 20, height: 20, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3,
+                  left: active ? 23 : 3, transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                }} />
+              </div>
+            </div>
+          );
+        })}
+      </Card>
+
+
+      <Card>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
           <CardTitle style={{ marginBottom: 0 }}>🤖 {t(lang, 'ai_mode_title')}</CardTitle>
           <span style={{
@@ -8527,9 +8629,9 @@ function EditProfileModal({ state, setState, closeModal, toast }) {
 
 /* ===================== APP ROOT ===================== */
 const initialState = {
-  profile: { name: '', age: null, height: null, weight: null, weightHistory: [], goal: null, activity: 'moderate', gender: 'F', targetCalories: null, targetMacros: null, targetWeight: null, dietaryRestrictions: [], foodLikes: '', foodDislikes: '' },
+  profile: { name: '', age: null, height: null, weight: null, weightHistory: [], goal: null, activity: 'moderate', gender: 'F', targetCalories: null, targetMacros: null, targetWeight: null, dietaryRestrictions: [], foodLikes: '', foodDislikes: '', modules: { ...EMPTY_MODULES } },
   pantry: [], foodLog: [], recipes: [], workouts: [], supplementLog: [], waterLog: [],
-  settings: { notifsEnabled: false, aiMode: true, units: 'metric', weeklyWorkoutGoal: 3 },
+  settings: { notifsEnabled: false, aiMode: true, units: 'metric', weeklyWorkoutGoal: 3, modules: { ...DEFAULT_MODULES } },
   trainingProgram: null,
   measurements: [],
   mealPlan: null,
@@ -8923,7 +9025,7 @@ export default function EatFitApp() {
         const timeoutId = setTimeout(() => controller.abort(), 9000);
         const testResponse = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1, messages: [{ role: "user", content: "test" }] }),
+          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 1, messages: [{ role: "user", content: "test" }] }),
           signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -8961,8 +9063,9 @@ export default function EatFitApp() {
     if (newProfile.weight) newProfile.weightHistory = [{ date: todayStr(), weight: newProfile.weight }];
     const cal = calcTargetCalories(newProfile);
     if (cal) { newProfile.targetCalories = cal; newProfile.targetMacros = calcTargetMacros(newProfile, cal); }
+    const chosenModules = newProfile.modules && Object.values(newProfile.modules).some(Boolean) ? newProfile.modules : DEFAULT_MODULES;
     setProfile(newProfile);
-    setState(s => ({ ...s, profile: newProfile, settings: { ...s.settings, units: chosenUnits } }));
+    setState(s => ({ ...s, profile: newProfile, settings: { ...s.settings, units: chosenUnits, modules: chosenModules } }));
     setOnboarded(true);
     toast(verdict('goalSet_' + newProfile.goal, lang));
   };
@@ -9100,14 +9203,15 @@ export default function EatFitApp() {
   }
 
 
+  const activeModules = state.settings.modules || DEFAULT_MODULES;
   const tabs = [
     { id: 'home', label: t(lang, 'tab_home'), icon: <IconHome /> },
-    { id: 'pantry', label: t(lang, 'tab_pantry'), icon: <IconPantry /> },
-    { id: 'nutrition', label: t(lang, 'tab_nutrition'), icon: <IconNutrition /> },
-    { id: 'courses', label: t(lang, 'tab_shopping_list'), icon: <IconShoppingList /> },
-    { id: 'workout', label: t(lang, 'tab_workout'), icon: <IconWorkout /> },
-    { id: 'progress', label: t(lang, 'tab_progress'), icon: <IconProgress /> }
-  ];
+    activeModules.antiGaspi && { id: 'pantry', label: t(lang, 'tab_pantry'), icon: <IconPantry /> },
+    activeModules.plan && { id: 'nutrition', label: t(lang, 'tab_nutrition'), icon: <IconNutrition /> },
+    (activeModules.antiGaspi || activeModules.plan) && { id: 'courses', label: t(lang, 'tab_shopping_list'), icon: <IconShoppingList /> },
+    activeModules.sport && { id: 'workout', label: t(lang, 'tab_workout'), icon: <IconWorkout /> },
+    activeModules.sport && { id: 'progress', label: t(lang, 'tab_progress'), icon: <IconProgress /> }
+  ].filter(Boolean);
 
 
   let viewContent;
