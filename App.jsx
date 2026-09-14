@@ -3817,8 +3817,17 @@ function ShoppingListGeneratingModal({ source, state, setState, closeModal, toas
       let ingredientsBlock = '';
       if (source === 'plan' && state.mealPlan) {
         const allMeals = [];
-        state.mealPlan.weeks.forEach(w => w.days.forEach(d => d.meals.forEach(m => allMeals.push(m.name))));
-        ingredientsBlock = allMeals.join(', ');
+        // On envoie les ingrédients déjà chiffrés du plan (ex: "150g de poulet") quand ils existent,
+        // plutôt que le seul nom du plat : ça évite à l'IA de devoir réinventer les quantités depuis un titre,
+        // ce qui est exactement ce qui rendait la liste de courses incohérente avec le plan.
+        state.mealPlan.weeks.forEach(w => w.days.forEach(d => d.meals.forEach(m => {
+          if (Array.isArray(m.ingredients) && m.ingredients.length) {
+            allMeals.push(`${m.name}: ${m.ingredients.join(', ')}`);
+          } else {
+            allMeals.push(m.name); // ancien plan généré avant l'ajout des ingrédients détaillés : repli sur le nom du plat
+          }
+        })));
+        ingredientsBlock = allMeals.join(' | ');
       } else if (source === 'recipes') {
         const allIngredients = [];
         state.recipes.forEach(r => (r.ingredients || []).forEach(i => allIngredients.push(i)));
@@ -3828,40 +3837,55 @@ function ShoppingListGeneratingModal({ source, state, setState, closeModal, toas
 
 
       const promptByLang = {
-        fr: `Voici une liste de repas/recettes prévus: ${ingredientsBlock}.
+        fr: `Voici la liste des repas prévus, avec pour chacun ses ingrédients et leurs quantités déjà chiffrées quand disponibles (format "Nom du repas: ingrédient1, ingrédient2..."), séparés par " | " : ${ingredientsBlock}.
 Voici ce que l'utilisateur a déjà dans son placard/frigo: ${pantryList}.
-Déduis la liste des ingrédients nécessaires pour préparer tous ces repas, en quantités agrégées raisonnables. Compare avec le stock existant: si un ingrédient est déjà possédé en quantité suffisante, marque-le comme "haveIt":true, sinon "haveIt":false.
+Additionne les quantités du MÊME ingrédient quand il revient dans plusieurs repas (ex: "150g de riz" + "80g de riz" = "230g de riz"), pour obtenir la quantité totale réelle à acheter — ne réinvente pas de quantités différentes de celles données si elles sont présentes. Pour un repas où seul le nom est fourni (sans quantités), déduis raisonnablement ses ingrédients. Compare le total avec le stock existant: si un ingrédient est déjà possédé en quantité suffisante, marque-le comme "haveIt":true, sinon "haveIt":false.
 Réponds UNIQUEMENT en JSON valide, sans markdown, sans préambule, format exact:
-{"items":[{"name":"nom ingrédient","quantity":"quantité estimée","catKey":"protein|carb|veg|fruit|dairy|fat|other","haveIt":true}]}
+{"items":[{"name":"nom ingrédient","quantity":"quantité totale agrégée","catKey":"protein|carb|veg|fruit|dairy|fat|other","haveIt":true}]}
 Utilise catKey parmi: protein, carb, veg, fruit, dairy, fat, other. Tous les champs texte doivent être en français.`,
-        en: `Here is a list of planned meals/recipes: ${ingredientsBlock}.
+        en: `Here is the list of planned meals, each with its ingredients and their already-computed quantities where available (format "Meal name: ingredient1, ingredient2..."), separated by " | ": ${ingredientsBlock}.
 Here is what the user already has in their pantry/fridge: ${pantryList}.
-Deduce the list of ingredients needed to prepare all these meals, in reasonable aggregated quantities. Compare with the existing stock: if an ingredient is already owned in sufficient quantity, mark it as "haveIt":true, otherwise "haveIt":false.
+Add up the quantities of the SAME ingredient when it appears in several meals (e.g. "150g rice" + "80g rice" = "230g rice"), to get the real total quantity to buy — don't invent different quantities than the ones given when they're present. For a meal where only the name is provided (no quantities), reasonably deduce its ingredients. Compare the total with the existing stock: if an ingredient is already owned in sufficient quantity, mark it as "haveIt":true, otherwise "haveIt":false.
 Respond ONLY in valid JSON, no markdown, no preamble, exact format:
-{"items":[{"name":"ingredient name","quantity":"estimated quantity","catKey":"protein|carb|veg|fruit|dairy|fat|other","haveIt":true}]}
+{"items":[{"name":"ingredient name","quantity":"aggregated total quantity","catKey":"protein|carb|veg|fruit|dairy|fat|other","haveIt":true}]}
 Use catKey among: protein, carb, veg, fruit, dairy, fat, other. All text fields must be written entirely in English.`,
-        es: `Aquí hay una lista de comidas/recetas previstas: ${ingredientsBlock}.
+        es: `Aquí está la lista de comidas previstas, cada una con sus ingredientes y sus cantidades ya calculadas cuando están disponibles (formato "Nombre de la comida: ingrediente1, ingrediente2..."), separadas por " | ": ${ingredientsBlock}.
 Esto es lo que el usuario ya tiene en su despensa/nevera: ${pantryList}.
-Deduce la lista de ingredientes necesarios para preparar todas estas comidas, en cantidades agregadas razonables. Compara con el stock existente: si un ingrediente ya se posee en cantidad suficiente, márcalo como "haveIt":true, si no "haveIt":false.
+Suma las cantidades del MISMO ingrediente cuando aparece en varias comidas (ej: "150g de arroz" + "80g de arroz" = "230g de arroz"), para obtener la cantidad total real a comprar — no inventes cantidades distintas de las dadas cuando están presentes. Para una comida donde solo se da el nombre (sin cantidades), deduce razonablemente sus ingredientes. Compara el total con el stock existente: si un ingrediente ya se posee en cantidad suficiente, márcalo como "haveIt":true, si no "haveIt":false.
 Responde SOLO en JSON válido, sin markdown, sin preámbulo, formato exacto:
-{"items":[{"name":"nombre del ingrediente","quantity":"cantidad estimada","catKey":"protein|carb|veg|fruit|dairy|fat|other","haveIt":true}]}
+{"items":[{"name":"nombre del ingrediente","quantity":"cantidad total agregada","catKey":"protein|carb|veg|fruit|dairy|fat|other","haveIt":true}]}
 Usa catKey entre: protein, carb, veg, fruit, dairy, fat, other. Todos los campos de texto deben estar escritos completamente en español.`
       };
 
 
+      const sleepMs = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+      let lastErr = null;
+      let parsed = null;
+      for (let attempt = 0; attempt <= 3 && !parsed; attempt++) {
+        try {
+          if (attempt > 0) await sleepMs(Math.min(1000 * Math.pow(2, attempt - 1), 8000));
+          const response = await fetch("/api/anthropic", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              model: "claude-sonnet-5", max_tokens: 6000,
+              messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }]
+            })
+          });
+          if (!response.ok) { lastErr = new Error('http_' + response.status); continue; }
+          const data = await response.json();
+          if (data.error) { lastErr = new Error('api_error_' + (data.error.message || data.error.type || 'unknown')); continue; }
+          const textBlock = data.content && data.content.find(c => c.type === 'text');
+          if (!textBlock) { lastErr = new Error('no_text_block'); continue; } // le modèle a épuisé son budget en réflexion interne sans produire de texte : on réessaie
+          const clean = textBlock.text.replace(/```json|```/g, '').trim();
+          const attemptParsed = parseJsonLenient(clean);
+          if (!attemptParsed) { lastErr = new Error('parse_failed'); continue; }
+          parsed = attemptParsed;
+        } catch (e) {
+          lastErr = e;
+        }
+      }
       try {
-        const response = await fetch("/api/anthropic", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "claude-sonnet-5", max_tokens: 2000,
-            messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }]
-          })
-        });
-        const data = await response.json();
-        const textBlock = data.content.find(c => c.type === 'text');
-        const clean = textBlock.text.replace(/```json|```/g, '').trim();
-        const parsed = parseJsonLenient(clean);
-        if (!parsed) throw new Error('parse_failed');
+        if (!parsed) throw lastErr || new Error('parse_failed');
         const items = (parsed.items || []).map(it => ({ ...it, id: uid(), checked: false }));
         setState(s => ({ ...s, shoppingList: { items, createdAt: todayStr(), source } }));
         closeModal();
@@ -4955,6 +4979,7 @@ function enforceMealPlanRules(days, lang, dislikedKeywords, avoidDairy) {
       const isMainMeal = meal.type === 'Déjeuner' || meal.type === 'Dîner';
       let name = meal.name || '';
       let kcal = meal.kcal || 0, protein = meal.protein || 0, carbs = meal.carbs || 0, fat = meal.fat || 0;
+      let ingredients = Array.isArray(meal.ingredients) ? [...meal.ingredients] : [];
       const lower = name.toLowerCase();
       // Règle 1 : aliment détesté présent dans le nom -> on ne peut pas "retirer" un ingrédient d'un simple nom,
       // donc on l'indique franchement plutôt que de laisser passer silencieusement une violation.
@@ -4975,13 +5000,16 @@ function enforceMealPlanRules(days, lang, dislikedKeywords, avoidDairy) {
           usedDairyToday.push(dairyPick);
           name += ` + ${dairyPick}`;
           kcal += 140; protein += 7; carbs += 14; fat += 6;
+          ingredients.push(dairyPick);
         }
         if (!hasFruit) {
-          name += ` + ${fruitLabel[lang] || fruitLabel.fr}`;
+          const fruitWord = fruitLabel[lang] || fruitLabel.fr;
+          name += ` + ${fruitWord}`;
           kcal += 70; carbs += 16;
+          ingredients.push(lang === 'en' ? '1 fruit' : lang === 'es' ? '1 fruta' : '1 fruit');
         }
       }
-      return { ...meal, name, kcal, protein, carbs, fat };
+      return { ...meal, name, kcal, protein, carbs, fat, ingredients };
     });
     return { ...day, meals };
   });
@@ -5701,9 +5729,10 @@ Règle nutritionnelle importante : inclus une source de féculents/glucides comp
 Autre règle importante : à CHAQUE déjeuner et CHAQUE dîner, inclus systématiquement un laitage (yaourt, fromage blanc, fromage...) et un fruit, en plus du plat principal — sauf si une restriction (sans lactose, végétalien) l'interdit, auquel cas adapte (laitage végétal, ou fruit seul).
 
 Pour chaque jour de cette semaine (7 jours), propose 4 repas (petit-déjeuner, déjeuner, dîner, collation) réalistes et variés, qui respectent globalement les cibles caloriques/macros journalières (tolérance +/-10%).
+Pour chaque repas, liste aussi ses ingrédients avec des quantités précises et réalistes pour UNE personne (ex: "150g de poulet", "80g de riz", "1 yaourt nature"), cohérentes avec les kcal/macros du repas — ces quantités serviront ensuite à générer une liste de courses, donc elles doivent être exactes et complètes (n'oublie aucun ingrédient du plat, y compris les matières grasses de cuisson si notables).
 Réponds UNIQUEMENT en JSON valide, sans markdown, sans préambule, format EXACT (pas de texte avant ou après):
-{"days":[{"dayNumber":1,"meals":[{"type":"Petit-déj","name":"nom du repas","emoji":"un seul emoji représentatif du plat","kcal":nombre,"protein":nombre,"carbs":nombre,"fat":nombre},{"type":"Déjeuner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0},{"type":"Dîner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0},{"type":"Collation","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0}]}]}
-Génère bien les 7 jours complets. Garde la clé JSON "type" exactement parmi ces 4 chaînes littérales: Petit-déj, Déjeuner, Dîner, Collation. Le champ "name" doit être entièrement en français, court (moins de 8 mots). Le champ "emoji" doit représenter fidèlement l'ingrédient principal du plat.`,
+{"days":[{"dayNumber":1,"meals":[{"type":"Petit-déj","name":"nom du repas","emoji":"un seul emoji représentatif du plat","kcal":nombre,"protein":nombre,"carbs":nombre,"fat":nombre,"ingredients":["ingrédient 1 avec quantité","ingrédient 2 avec quantité"]},{"type":"Déjeuner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Dîner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Collation","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]}]}]}
+Génère bien les 7 jours complets. Garde la clé JSON "type" exactement parmi ces 4 chaînes littérales: Petit-déj, Déjeuner, Dîner, Collation. Le champ "name" doit être entièrement en français, court (moins de 8 mots). Le champ "emoji" doit représenter fidèlement l'ingrédient principal du plat. Le champ "ingredients" doit être entièrement en français, au format "quantité + ingrédient".`,
       en: `Create ONE week (week ${weekNumber}) of a meal plan for a person with this profile:
 - Age: ${p.age}, Gender: ${p.gender === 'F' ? 'Female' : 'Male'}, Height: ${p.height}cm, Weight: ${p.weight}kg
 - Goal: ${goalLabel}. ${targetWeightLine}
@@ -5714,9 +5743,10 @@ Important nutritional rule: include a starch/complex carb source (rice, pasta, b
 Another important rule: at EVERY lunch and EVERY dinner, systematically include a dairy product (yogurt, cottage cheese, cheese...) and a fruit, in addition to the main dish — unless a restriction (lactose-free, vegan) forbids it, in which case adapt (plant-based dairy, or fruit only).
 
 For each day of this week (7 days), propose 4 meals (breakfast, lunch, dinner, snack) that are realistic and varied, broadly respecting the daily calorie/macro targets (+/-10% tolerance).
+For each meal, also list its ingredients with precise, realistic quantities for ONE person (e.g. "150g chicken breast", "80g rice", "1 plain yogurt"), consistent with the meal's kcal/macros — these quantities will later be used to generate a shopping list, so they must be exact and complete (don't omit any ingredient of the dish, including notable cooking fats).
 Respond ONLY in valid JSON, no markdown, no preamble, EXACT format (no text before or after):
-{"days":[{"dayNumber":1,"meals":[{"type":"Petit-déj","name":"meal name","emoji":"a single emoji representing the dish","kcal":number,"protein":number,"carbs":number,"fat":number},{"type":"Déjeuner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0},{"type":"Dîner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0},{"type":"Collation","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0}]}]}
-Generate the full 7 days. Keep the JSON key "type" exactly among: Petit-déj, Déjeuner, Dîner, Collation (these 4 literal strings only). The "name" field must be written entirely in English, short (under 8 words). The "emoji" field must faithfully represent the dish's main ingredient.`,
+{"days":[{"dayNumber":1,"meals":[{"type":"Petit-déj","name":"meal name","emoji":"a single emoji representing the dish","kcal":number,"protein":number,"carbs":number,"fat":number,"ingredients":["ingredient 1 with quantity","ingredient 2 with quantity"]},{"type":"Déjeuner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Dîner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Collation","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]}]}]}
+Generate the full 7 days. Keep the JSON key "type" exactly among: Petit-déj, Déjeuner, Dîner, Collation (these 4 literal strings only). The "name" field must be written entirely in English, short (under 8 words). The "emoji" field must faithfully represent the dish's main ingredient. The "ingredients" field must be written entirely in English, in "quantity + ingredient" format.`,
       es: `Crea UNA semana (semana ${weekNumber}) de un plan alimentario para una persona con este perfil:
 - Edad: ${p.age}, Género: ${p.gender === 'F' ? 'Mujer' : 'Hombre'}, Altura: ${p.height}cm, Peso: ${p.weight}kg
 - Objetivo: ${goalLabel}. ${targetWeightLine}
@@ -5727,9 +5757,10 @@ Regla nutricional importante: incluye una fuente de carbohidratos complejos/féc
 Otra regla importante: en CADA comida y CADA cena, incluye sistemáticamente un lácteo (yogur, requesón, queso...) y una fruta, además del plato principal — salvo que una restricción (sin lactosa, vegano) lo impida, en cuyo caso adapta (lácteo vegetal, o solo fruta).
 
 Para cada día de esta semana (7 días), propón 4 comidas (desayuno, comida, cena, tentempié) realistas y variadas, respetando en general los objetivos diarios de calorías/macros (tolerancia +/-10%).
+Para cada comida, indica también sus ingredientes con cantidades precisas y realistas para UNA persona (ej: "150g de pechuga de pollo", "80g de arroz", "1 yogur natural"), coherentes con las kcal/macros de la comida — estas cantidades se usarán luego para generar una lista de la compra, así que deben ser exactas y completas (no olvides ningún ingrediente del plato, incluidas las grasas de cocción si son notables).
 Responde SOLO en JSON válido, sin markdown, sin preámbulo, formato EXACTO (sin texto antes o después):
-{"days":[{"dayNumber":1,"meals":[{"type":"Petit-déj","name":"nombre de la comida","emoji":"un solo emoji representativo del plato","kcal":número,"protein":número,"carbs":número,"fat":número},{"type":"Déjeuner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0},{"type":"Dîner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0},{"type":"Collation","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0}]}]}
-Genera los 7 días completos. Mantén la clave JSON "type" exactamente entre estas 4 cadenas literales: Petit-déj, Déjeuner, Dîner, Collation. El campo "name" debe estar escrito completamente en español, corto (menos de 8 palabras). El campo "emoji" debe representar fielmente el ingrediente principal del plato.`
+{"days":[{"dayNumber":1,"meals":[{"type":"Petit-déj","name":"nombre de la comida","emoji":"un solo emoji representativo del plato","kcal":número,"protein":número,"carbs":número,"fat":número,"ingredients":["ingrediente 1 con cantidad","ingrediente 2 con cantidad"]},{"type":"Déjeuner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Dîner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Collation","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]}]}]}
+Genera los 7 días completos. Mantén la clave JSON "type" exactamente entre estas 4 cadenas literales: Petit-déj, Déjeuner, Dîner, Collation. El campo "name" debe estar escrito completamente en español, corto (menos de 8 palabras). El campo "emoji" debe representar fielmente el ingrediente principal del plato. El campo "ingredients" debe estar escrito completamente en español, en formato "cantidad + ingrediente".`
     };
     return promptByLang[lang] || promptByLang.fr;
   };
@@ -5846,12 +5877,12 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo: {"title":"título c
         if (w > 1) await sleep(1500);
         let weekData;
         try {
-          weekData = await callAI(buildWeekPrompt(w, p, goalLabel, targetCal, macros, targetWeightLine, prefsLineForWeek(w)), 3000);
+          weekData = await callAI(buildWeekPrompt(w, p, goalLabel, targetCal, macros, targetWeightLine, prefsLineForWeek(w)), 14000);
         } catch (weekErr) {
           // Dernière chance : pause longue puis un essai isolé avant d'abandonner cette semaine
           await sleep(5000);
           try {
-            weekData = await callAI(buildWeekPrompt(w, p, goalLabel, targetCal, macros, targetWeightLine, prefsLineForWeek(w)), 3000, 1);
+            weekData = await callAI(buildWeekPrompt(w, p, goalLabel, targetCal, macros, targetWeightLine, prefsLineForWeek(w)), 14000, 1);
           } catch (finalErr) {
             if (allWeeks.length === 0) throw finalErr; // rien de généré du tout, on abandonne pour de bon
             break; // on garde ce qui a déjà été généré plutôt que de tout perdre
@@ -6896,11 +6927,11 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo: {"title":"título c
         if (w > 1) await sleep(1500);
         let weekData;
         try {
-          weekData = await callAI(buildWeekPrompt(w, p, goalLabel, levelLabel, equipLabel, envLabel), 2500);
+          weekData = await callAI(buildWeekPrompt(w, p, goalLabel, levelLabel, equipLabel, envLabel), 8000);
         } catch (weekErr) {
           await sleep(5000);
           try {
-            weekData = await callAI(buildWeekPrompt(w, p, goalLabel, levelLabel, equipLabel, envLabel), 2500, 1);
+            weekData = await callAI(buildWeekPrompt(w, p, goalLabel, levelLabel, equipLabel, envLabel), 8000, 1);
           } catch (finalErr) {
             if (allWeeks.length === 0) throw finalErr;
             break;
