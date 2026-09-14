@@ -5717,9 +5717,10 @@ function MealPlanWizardModal({ state, setState, closeModal, toast, openModal }) 
   const titleStyle = { fontSize: 20, marginBottom: 16, fontFamily: "'Oswald', sans-serif", fontWeight: 600 };
 
 
-  const buildWeekPrompt = (weekNumber, p, goalLabel, targetCal, macros, targetWeightLine, prefsLine) => {
+  const buildWeekPrompt = (weekNumber, p, goalLabel, targetCal, macros, targetWeightLine, prefsLine, startDay = 1, numDays = 7) => {
+    const endDay = startDay + numDays - 1;
     const promptByLang = {
-      fr: `Crée UNE semaine (semaine ${weekNumber}) d'un plan alimentaire pour une personne avec ce profil :
+      fr: `Crée ${numDays === 7 ? `UNE semaine (semaine ${weekNumber})` : `les jours ${startDay} à ${endDay} de la semaine ${weekNumber}`} d'un plan alimentaire pour une personne avec ce profil :
 - Âge: ${p.age} ans, Genre: ${p.gender === 'F' ? 'Femme' : 'Homme'}, Taille: ${p.height}cm, Poids: ${p.weight}kg
 - Objectif: ${goalLabel}. ${targetWeightLine}
 - Cibles nutritionnelles quotidiennes: ${targetCal} kcal, P${macros.protein}g/G${macros.carbs}g/L${macros.fat}g
@@ -5728,12 +5729,12 @@ function MealPlanWizardModal({ state, setState, closeModal, toast, openModal }) 
 Règle nutritionnelle importante : inclus une source de féculents/glucides complexes (riz, pâtes, pain, pomme de terre, quinoa, légumineuses, avoine...) à CHAQUE repas principal (petit-déjeuner, déjeuner, dîner), y compris en cas de perte de poids ou de sèche — adapte juste la quantité à la baisse plutôt que de les supprimer d'un repas. Ne concentre jamais tous les glucides de la journée sur un seul repas.
 Autre règle importante : à CHAQUE déjeuner et CHAQUE dîner, inclus systématiquement un laitage (yaourt, fromage blanc, fromage...) et un fruit, en plus du plat principal — sauf si une restriction (sans lactose, végétalien) l'interdit, auquel cas adapte (laitage végétal, ou fruit seul).
 
-Pour chaque jour de cette semaine (7 jours), propose 4 repas (petit-déjeuner, déjeuner, dîner, collation) réalistes et variés, qui respectent globalement les cibles caloriques/macros journalières (tolérance +/-10%).
-Pour chaque repas, liste aussi ses ingrédients avec des quantités précises et réalistes pour UNE personne (ex: "150g de poulet", "80g de riz", "1 yaourt nature"), cohérentes avec les kcal/macros du repas — ces quantités serviront ensuite à générer une liste de courses, donc elles doivent être exactes et complètes (n'oublie aucun ingrédient du plat, y compris les matières grasses de cuisson si notables).
+Pour chaque jour concerné (${numDays} jour${numDays > 1 ? 's' : ''}, numérotés de ${startDay} à ${endDay}), propose 4 repas (petit-déjeuner, déjeuner, dîner, collation) réalistes et variés, qui respectent globalement les cibles caloriques/macros journalières (tolérance +/-10%).
+Pour chaque repas, liste aussi ses ingrédients avec des quantités précises et réalistes pour UNE personne (ex: "150g de poulet", "80g de riz", "1 yaourt nature"), cohérentes avec les kcal/macros du repas — ces quantités serviront ensuite à générer une liste de courses, donc elles doivent être exactes et complètes (n'oublie aucun ingrédient du plat, y compris les matières grasses de cuisson si notables). Reste concis sur le nombre d'ingrédients (3-5 par repas, l'essentiel seulement).
 Réponds UNIQUEMENT en JSON valide, sans markdown, sans préambule, format EXACT (pas de texte avant ou après):
-{"days":[{"dayNumber":1,"meals":[{"type":"Petit-déj","name":"nom du repas","emoji":"un seul emoji représentatif du plat","kcal":nombre,"protein":nombre,"carbs":nombre,"fat":nombre,"ingredients":["ingrédient 1 avec quantité","ingrédient 2 avec quantité"]},{"type":"Déjeuner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Dîner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Collation","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]}]}]}
-Génère bien les 7 jours complets. Garde la clé JSON "type" exactement parmi ces 4 chaînes littérales: Petit-déj, Déjeuner, Dîner, Collation. Le champ "name" doit être entièrement en français, court (moins de 8 mots). Le champ "emoji" doit représenter fidèlement l'ingrédient principal du plat. Le champ "ingredients" doit être entièrement en français, au format "quantité + ingrédient".`,
-      en: `Create ONE week (week ${weekNumber}) of a meal plan for a person with this profile:
+{"days":[{"dayNumber":${startDay},"meals":[{"type":"Petit-déj","name":"nom du repas","emoji":"un seul emoji représentatif du plat","kcal":nombre,"protein":nombre,"carbs":nombre,"fat":nombre,"ingredients":["ingrédient 1 avec quantité","ingrédient 2 avec quantité"]},{"type":"Déjeuner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Dîner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Collation","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]}]}]}
+Génère bien les ${numDays} jour${numDays > 1 ? 's' : ''} complets, avec "dayNumber" allant exactement de ${startDay} à ${endDay} (pas de 1 à ${numDays}). Garde la clé JSON "type" exactement parmi ces 4 chaînes littérales: Petit-déj, Déjeuner, Dîner, Collation. Le champ "name" doit être entièrement en français, court (moins de 8 mots). Le champ "emoji" doit représenter fidèlement l'ingrédient principal du plat. Le champ "ingredients" doit être entièrement en français, au format "quantité + ingrédient".`,
+      en: `Create ${numDays === 7 ? `ONE week (week ${weekNumber})` : `days ${startDay} to ${endDay} of week ${weekNumber}`} of a meal plan for a person with this profile:
 - Age: ${p.age}, Gender: ${p.gender === 'F' ? 'Female' : 'Male'}, Height: ${p.height}cm, Weight: ${p.weight}kg
 - Goal: ${goalLabel}. ${targetWeightLine}
 - Daily nutrition targets: ${targetCal} kcal, P${macros.protein}g/C${macros.carbs}g/F${macros.fat}g
@@ -5742,12 +5743,12 @@ Génère bien les 7 jours complets. Garde la clé JSON "type" exactement parmi c
 Important nutritional rule: include a starch/complex carb source (rice, pasta, bread, potato, quinoa, legumes, oats...) at EVERY main meal (breakfast, lunch, dinner), even when losing weight or cutting — just reduce the portion rather than removing it from a meal entirely. Never concentrate all of the day's carbs into a single meal.
 Another important rule: at EVERY lunch and EVERY dinner, systematically include a dairy product (yogurt, cottage cheese, cheese...) and a fruit, in addition to the main dish — unless a restriction (lactose-free, vegan) forbids it, in which case adapt (plant-based dairy, or fruit only).
 
-For each day of this week (7 days), propose 4 meals (breakfast, lunch, dinner, snack) that are realistic and varied, broadly respecting the daily calorie/macro targets (+/-10% tolerance).
-For each meal, also list its ingredients with precise, realistic quantities for ONE person (e.g. "150g chicken breast", "80g rice", "1 plain yogurt"), consistent with the meal's kcal/macros — these quantities will later be used to generate a shopping list, so they must be exact and complete (don't omit any ingredient of the dish, including notable cooking fats).
+For each day involved (${numDays} day${numDays > 1 ? 's' : ''}, numbered ${startDay} to ${endDay}), propose 4 meals (breakfast, lunch, dinner, snack) that are realistic and varied, broadly respecting the daily calorie/macro targets (+/-10% tolerance).
+For each meal, also list its ingredients with precise, realistic quantities for ONE person (e.g. "150g chicken breast", "80g rice", "1 plain yogurt"), consistent with the meal's kcal/macros — these quantities will later be used to generate a shopping list, so they must be exact and complete (don't omit any ingredient of the dish, including notable cooking fats). Keep the ingredient count concise (3-5 per meal, the essentials only).
 Respond ONLY in valid JSON, no markdown, no preamble, EXACT format (no text before or after):
-{"days":[{"dayNumber":1,"meals":[{"type":"Petit-déj","name":"meal name","emoji":"a single emoji representing the dish","kcal":number,"protein":number,"carbs":number,"fat":number,"ingredients":["ingredient 1 with quantity","ingredient 2 with quantity"]},{"type":"Déjeuner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Dîner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Collation","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]}]}]}
-Generate the full 7 days. Keep the JSON key "type" exactly among: Petit-déj, Déjeuner, Dîner, Collation (these 4 literal strings only). The "name" field must be written entirely in English, short (under 8 words). The "emoji" field must faithfully represent the dish's main ingredient. The "ingredients" field must be written entirely in English, in "quantity + ingredient" format.`,
-      es: `Crea UNA semana (semana ${weekNumber}) de un plan alimentario para una persona con este perfil:
+{"days":[{"dayNumber":${startDay},"meals":[{"type":"Petit-déj","name":"meal name","emoji":"a single emoji representing the dish","kcal":number,"protein":number,"carbs":number,"fat":number,"ingredients":["ingredient 1 with quantity","ingredient 2 with quantity"]},{"type":"Déjeuner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Dîner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Collation","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]}]}]}
+Generate all ${numDays} day${numDays > 1 ? 's' : ''} in full, with "dayNumber" running exactly from ${startDay} to ${endDay} (not 1 to ${numDays}). Keep the JSON key "type" exactly among: Petit-déj, Déjeuner, Dîner, Collation (these 4 literal strings only). The "name" field must be written entirely in English, short (under 8 words). The "emoji" field must faithfully represent the dish's main ingredient. The "ingredients" field must be written entirely in English, in "quantity + ingredient" format.`,
+      es: `Crea ${numDays === 7 ? `UNA semana (semana ${weekNumber})` : `los días ${startDay} a ${endDay} de la semana ${weekNumber}`} de un plan alimentario para una persona con este perfil:
 - Edad: ${p.age}, Género: ${p.gender === 'F' ? 'Mujer' : 'Hombre'}, Altura: ${p.height}cm, Peso: ${p.weight}kg
 - Objetivo: ${goalLabel}. ${targetWeightLine}
 - Objetivos nutricionales diarios: ${targetCal} kcal, P${macros.protein}g/C${macros.carbs}g/G${macros.fat}g
@@ -5756,11 +5757,11 @@ Generate the full 7 days. Keep the JSON key "type" exactly among: Petit-déj, D�
 Regla nutricional importante: incluye una fuente de carbohidratos complejos/féculas (arroz, pasta, pan, patata, quinoa, legumbres, avena...) en CADA comida principal (desayuno, comida, cena), incluso en pérdida de peso o definición — simplemente reduce la ración en vez de eliminarla de una comida. Nunca concentres todos los carbohidratos del día en una sola comida.
 Otra regla importante: en CADA comida y CADA cena, incluye sistemáticamente un lácteo (yogur, requesón, queso...) y una fruta, además del plato principal — salvo que una restricción (sin lactosa, vegano) lo impida, en cuyo caso adapta (lácteo vegetal, o solo fruta).
 
-Para cada día de esta semana (7 días), propón 4 comidas (desayuno, comida, cena, tentempié) realistas y variadas, respetando en general los objetivos diarios de calorías/macros (tolerancia +/-10%).
-Para cada comida, indica también sus ingredientes con cantidades precisas y realistas para UNA persona (ej: "150g de pechuga de pollo", "80g de arroz", "1 yogur natural"), coherentes con las kcal/macros de la comida — estas cantidades se usarán luego para generar una lista de la compra, así que deben ser exactas y completas (no olvides ningún ingrediente del plato, incluidas las grasas de cocción si son notables).
+Para cada día implicado (${numDays} día${numDays > 1 ? 's' : ''}, numerados del ${startDay} al ${endDay}), propón 4 comidas (desayuno, comida, cena, tentempié) realistas y variadas, respetando en general los objetivos diarios de calorías/macros (tolerancia +/-10%).
+Para cada comida, indica también sus ingredientes con cantidades precisas y realistas para UNA persona (ej: "150g de pechuga de pollo", "80g de arroz", "1 yogur natural"), coherentes con las kcal/macros de la comida — estas cantidades se usarán luego para generar una lista de la compra, así que deben ser exactas y completas (no olvides ningún ingrediente del plato, incluidas las grasas de cocción si son notables). Sé conciso con el número de ingredientes (3-5 por comida, solo lo esencial).
 Responde SOLO en JSON válido, sin markdown, sin preámbulo, formato EXACTO (sin texto antes o después):
-{"days":[{"dayNumber":1,"meals":[{"type":"Petit-déj","name":"nombre de la comida","emoji":"un solo emoji representativo del plato","kcal":número,"protein":número,"carbs":número,"fat":número,"ingredients":["ingrediente 1 con cantidad","ingrediente 2 con cantidad"]},{"type":"Déjeuner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Dîner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Collation","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]}]}]}
-Genera los 7 días completos. Mantén la clave JSON "type" exactamente entre estas 4 cadenas literales: Petit-déj, Déjeuner, Dîner, Collation. El campo "name" debe estar escrito completamente en español, corto (menos de 8 palabras). El campo "emoji" debe representar fielmente el ingrediente principal del plato. El campo "ingredients" debe estar escrito completamente en español, en formato "cantidad + ingrediente".`
+{"days":[{"dayNumber":${startDay},"meals":[{"type":"Petit-déj","name":"nombre de la comida","emoji":"un solo emoji representativo del plato","kcal":número,"protein":número,"carbs":número,"fat":número,"ingredients":["ingrediente 1 con cantidad","ingrediente 2 con cantidad"]},{"type":"Déjeuner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Dîner","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]},{"type":"Collation","name":"...","emoji":"...","kcal":0,"protein":0,"carbs":0,"fat":0,"ingredients":["..."]}]}]}
+Genera los ${numDays} día${numDays > 1 ? 's' : ''} completos, con "dayNumber" yendo exactamente de ${startDay} a ${endDay} (no de 1 a ${numDays}). Mantén la clave JSON "type" exactamente entre estas 4 cadenas literales: Petit-déj, Déjeuner, Dîner, Collation. El campo "name" debe estar escrito completamente en español, corto (menos de 8 palabras). El campo "emoji" debe representar fielmente el ingrediente principal del plato. El campo "ingredients" debe estar escrito completamente en español, en formato "cantidad + ingrediente".`
     };
     return promptByLang[lang] || promptByLang.fr;
   };
@@ -5810,7 +5811,7 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo: {"title":"título c
 
   const generate = async () => {
     setGenerating(true); setError(null);
-    setProgress({ current: 0, total: weeks + 1 });
+    setProgress({ current: 0, total: weeks * 2 + 1 });
     setState(s => ({ ...s, profile: { ...s.profile, foodLikes: likesInput, foodDislikes: dislikesInput } }));
     const p = state.profile;
     const targetCal = p.targetCalories || 2000;
@@ -5868,35 +5869,51 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo: {"title":"título c
     let failedStep = 'title';
     try {
       const titleData = await callAI(buildTitlePrompt(p, goalLabel), 500);
-      setProgress({ current: 1, total: weeks + 1 });
+      setProgress({ current: 1, total: weeks * 2 + 1 });
 
 
-      const allWeeks = [];
+      failedStep = 'weeks';
+      // L'API refuse un max_tokens trop élevé (erreur http_400) et le modèle peut de toute façon
+      // passer une grosse partie de son budget en réflexion interne sur une semaine entière (7 jours
+      // x 4 repas x ingrédients) — donc on découpe chaque semaine en 2 appels plus petits (jours 1-4 et
+      // 5-7), tous générés EN PARALLÈLE plutôt qu'un par un : ça reste dans le budget de tokens accepté
+      // ET c'est nettement plus rapide, surtout sur plusieurs semaines.
+      const dayChunks = [];
       for (let w = 1; w <= weeks; w++) {
-        failedStep = 'week_' + w;
-        if (w > 1) await sleep(1500);
-        let weekData;
-        try {
-          weekData = await callAI(buildWeekPrompt(w, p, goalLabel, targetCal, macros, targetWeightLine, prefsLineForWeek(w)), 14000);
-        } catch (weekErr) {
-          // Dernière chance : pause longue puis un essai isolé avant d'abandonner cette semaine
-          await sleep(5000);
-          try {
-            weekData = await callAI(buildWeekPrompt(w, p, goalLabel, targetCal, macros, targetWeightLine, prefsLineForWeek(w)), 14000, 1);
-          } catch (finalErr) {
-            if (allWeeks.length === 0) throw finalErr; // rien de généré du tout, on abandonne pour de bon
-            break; // on garde ce qui a déjà été généré plutôt que de tout perdre
-          }
-        }
-        if (!weekData.days || !weekData.days.length) {
-          if (allWeeks.length === 0) throw new Error('invalid_week_structure');
-          break;
-        }
-        const avoidDairyAI = state.profile.dietaryRestrictions && (state.profile.dietaryRestrictions.includes('lactose') || state.profile.dietaryRestrictions.includes('vegan'));
-        const fixedDays = enforceMealPlanRules(weekData.days, lang, splitFoodList(dislikesInput), avoidDairyAI);
-        allWeeks.push({ weekNumber: w, days: fixedDays });
-        setProgress({ current: 1 + w, total: weeks + 1 });
+        dayChunks.push({ w, startDay: 1, numDays: 4 });
+        dayChunks.push({ w, startDay: 5, numDays: 3 });
       }
+      const chunkOutcomes = await Promise.all(
+        dayChunks.map(async ({ w, startDay, numDays }) => {
+          try {
+            const chunkData = await callAI(buildWeekPrompt(w, p, goalLabel, targetCal, macros, targetWeightLine, prefsLineForWeek(w), startDay, numDays), 8000);
+            setProgress(pr => ({ current: pr.current + 1, total: weeks * 2 + 1 }));
+            return { w, days: chunkData && chunkData.days };
+          } catch (chunkErr) {
+            await sleep(3000);
+            try {
+              const chunkData = await callAI(buildWeekPrompt(w, p, goalLabel, targetCal, macros, targetWeightLine, prefsLineForWeek(w), startDay, numDays), 8000, 1);
+              setProgress(pr => ({ current: pr.current + 1, total: weeks * 2 + 1 }));
+              return { w, days: chunkData && chunkData.days };
+            } catch (finalErr) {
+              setProgress(pr => ({ current: pr.current + 1, total: weeks * 2 + 1 }));
+              return { w, days: null }; // ce morceau a échoué, on garde le reste
+            }
+          }
+        })
+      );
+      const avoidDairyAI = state.profile.dietaryRestrictions && (state.profile.dietaryRestrictions.includes('lactose') || state.profile.dietaryRestrictions.includes('vegan'));
+      const weekDaysMap = {};
+      chunkOutcomes.forEach(({ w, days }) => {
+        if (!days || !days.length) return;
+        (weekDaysMap[w] || (weekDaysMap[w] = [])).push(...days);
+      });
+      const allWeeks = Object.keys(weekDaysMap).map(Number).sort((a, b) => a - b)
+        .map(w => {
+          const sortedDays = weekDaysMap[w].slice().sort((a, b) => (a.dayNumber || 0) - (b.dayNumber || 0));
+          return { weekNumber: w, days: enforceMealPlanRules(sortedDays, lang, splitFoodList(dislikesInput), avoidDairyAI) };
+        });
+      if (allWeeks.length === 0) throw new Error('invalid_week_structure');
 
 
       const fullPlan = {
@@ -6921,29 +6938,33 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo: {"title":"título c
       setProgress({ current: 1, total: PROGRAM_WEEKS + 1 });
 
 
-      const allWeeks = [];
-      for (let w = 1; w <= PROGRAM_WEEKS; w++) {
-        failedStep = 'week_' + w;
-        if (w > 1) await sleep(1500);
-        let weekData;
-        try {
-          weekData = await callAI(buildWeekPrompt(w, p, goalLabel, levelLabel, equipLabel, envLabel), 8000);
-        } catch (weekErr) {
-          await sleep(5000);
+      failedStep = 'weeks';
+      // Semaines indépendantes -> génération EN PARALLÈLE plutôt qu'une par une avec pauses,
+      // pour éviter les temps d'attente qui s'additionnent sur plusieurs semaines.
+      const weekOutcomes = await Promise.all(
+        Array.from({ length: PROGRAM_WEEKS }, (_, i) => i + 1).map(async (w) => {
           try {
-            weekData = await callAI(buildWeekPrompt(w, p, goalLabel, levelLabel, equipLabel, envLabel), 8000, 1);
-          } catch (finalErr) {
-            if (allWeeks.length === 0) throw finalErr;
-            break;
+            const weekData = await callAI(buildWeekPrompt(w, p, goalLabel, levelLabel, equipLabel, envLabel), 8000);
+            setProgress(pr => ({ current: pr.current + 1, total: PROGRAM_WEEKS + 1 }));
+            return { w, weekData };
+          } catch (weekErr) {
+            await sleep(3000);
+            try {
+              const weekData = await callAI(buildWeekPrompt(w, p, goalLabel, levelLabel, equipLabel, envLabel), 8000, 1);
+              setProgress(pr => ({ current: pr.current + 1, total: PROGRAM_WEEKS + 1 }));
+              return { w, weekData };
+            } catch (finalErr) {
+              setProgress(pr => ({ current: pr.current + 1, total: PROGRAM_WEEKS + 1 }));
+              return { w, weekData: null };
+            }
           }
-        }
-        if (!weekData.days || !weekData.days.length) {
-          if (allWeeks.length === 0) throw new Error('invalid_week_structure');
-          break;
-        }
-        allWeeks.push({ weekNumber: w, days: weekData.days });
-        setProgress({ current: 1 + w, total: PROGRAM_WEEKS + 1 });
-      }
+        })
+      );
+      const allWeeks = weekOutcomes
+        .filter(r => r.weekData && r.weekData.days && r.weekData.days.length)
+        .sort((a, b) => a.w - b.w)
+        .map(r => ({ weekNumber: r.w, days: r.weekData.days }));
+      if (allWeeks.length === 0) throw new Error('invalid_week_structure');
 
 
       const fullProgram = { title: titleData.title || 'Programme', daysPerWeek: days, notes: titleData.notes || '', weeks: allWeeks };
