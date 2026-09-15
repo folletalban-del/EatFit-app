@@ -160,6 +160,10 @@ const UI_STRINGS = {
     program_level_q: "Ton niveau d'expérience", level_beginner: "Débutant", level_intermediate: "Intermédiaire", level_advanced: "Avancé",
     program_equipment_q: "Où tu t'entraînes", equip_gym: "Salle complète", equip_home: "Maison (peu de matériel)", equip_both: "Les deux",
     program_environment_q: "Ton environnement pour le cardio/extérieur", env_indoor: "Intérieur uniquement (salle, appart)", env_nature: "Accès nature (forêt, lac, parc)", env_city: "Ville (rues, pas de nature à proximité)",
+    home_equip_q: "Quel matériel as-tu à la maison ?", home_equip_hint: "Coche ce que tu possèdes. Rien coché = exercices au poids du corps uniquement.",
+    equip_dumbbells: "Haltères réglables", equip_dumbbells_hint: "2x jusqu'à 20-25 kg",
+    equip_bench: "Banc inclinable", equip_pullupbar: "Barre de traction", equip_bands: "Élastiques", equip_abwheel: "Roue abdominale",
+    add_equip_ph: "Ex: kettlebell, TRX, corde à sauter...",
     program_generating: "Construction du programme en cours", program_generating_desc: "L'IA calcule un programme sur-mesure selon ton profil…",
     program_duration: "semaines", program_week: "Semaine", program_day: "Jour", program_rest_day: "Repos",
     weight_label: "Poids", program_progress_title: "Progression depuis le début du programme", since_start: "Depuis le",
@@ -356,6 +360,10 @@ const UI_STRINGS = {
     program_level_q: "Your experience level", level_beginner: "Beginner", level_intermediate: "Intermediate", level_advanced: "Advanced",
     program_equipment_q: "Where you train", equip_gym: "Full gym", equip_home: "Home (little equipment)", equip_both: "Both",
     program_environment_q: "Your environment for cardio/outdoor", env_indoor: "Indoors only (gym, apartment)", env_nature: "Nature access (forest, lake, park)", env_city: "City (streets, no nature nearby)",
+    home_equip_q: "What equipment do you have at home?", home_equip_hint: "Check what you own. Nothing checked = bodyweight exercises only.",
+    equip_dumbbells: "Adjustable dumbbells", equip_dumbbells_hint: "2x up to 20-25 kg",
+    equip_bench: "Incline bench", equip_pullupbar: "Pull-up bar", equip_bands: "Resistance bands", equip_abwheel: "Ab wheel",
+    add_equip_ph: "E.g: kettlebell, TRX, jump rope...",
     program_generating: "Building your program", program_generating_desc: "The AI is calculating a custom program based on your profile…",
     program_duration: "weeks", program_week: "Week", program_day: "Day", program_rest_day: "Rest",
     weight_label: "Weight", program_progress_title: "Progress since program start", since_start: "Since",
@@ -552,6 +560,10 @@ const UI_STRINGS = {
     program_level_q: "Tu nivel de experiencia", level_beginner: "Principiante", level_intermediate: "Intermedio", level_advanced: "Avanzado",
     program_equipment_q: "Dónde entrenas", equip_gym: "Gimnasio completo", equip_home: "Casa (poco material)", equip_both: "Ambos",
     program_environment_q: "Tu entorno para cardio/exterior", env_indoor: "Solo interior (gimnasio, piso)", env_nature: "Acceso a naturaleza (bosque, lago, parque)", env_city: "Ciudad (calles, sin naturaleza cerca)",
+    home_equip_q: "¿Qué material tienes en casa?", home_equip_hint: "Marca lo que tienes. Nada marcado = ejercicios solo con peso corporal.",
+    equip_dumbbells: "Mancuernas ajustables", equip_dumbbells_hint: "2x hasta 20-25 kg",
+    equip_bench: "Banco inclinable", equip_pullupbar: "Barra de dominadas", equip_bands: "Bandas elásticas", equip_abwheel: "Rueda abdominal",
+    add_equip_ph: "Ej: kettlebell, TRX, cuerda de saltar...",
     program_generating: "Construyendo tu programa", program_generating_desc: "La IA está calculando un programa a medida según tu perfil…",
     program_duration: "semanas", program_week: "Semana", program_day: "Día", program_rest_day: "Descanso",
     weight_label: "Peso", program_progress_title: "Progreso desde el inicio del programa", since_start: "Desde el",
@@ -634,6 +646,7 @@ function getGoalInfo(goalKey, lang) {
 
 
 const DIETARY_RESTRICTIONS_LIST = ['vegetarian', 'vegan', 'lactose', 'gluten', 'nuts', 'fish'];
+const HOME_EQUIPMENT_LIST = ['dumbbells', 'bench', 'pullupbar', 'bands', 'abwheel'];
 const ACTIVITY_LEVELS_META = [
   { key: 'sedentary', labelKey: 'act_sedentary', descKey: 'act_sedentary_d', factor: 1.2 },
   { key: 'light', labelKey: 'act_light', descKey: 'act_light_d', factor: 1.375 },
@@ -3867,7 +3880,7 @@ Usa catKey entre: protein, carb, veg, fruit, dairy, fat, other. Todos los campos
           const response = await fetch("/api/anthropic", {
             method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              model: "claude-sonnet-5", max_tokens: 6000,
+              model: "claude-sonnet-5", max_tokens: 6000, thinking: { type: "disabled" },
               messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }]
             })
           });
@@ -4171,7 +4184,7 @@ function PhotoAddPanel({ setState, closeModal, toast }) {
     const response = await fetch("/api/anthropic", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-5", max_tokens: 2000,
+        model: "claude-sonnet-5", max_tokens: 2000, thinking: { type: "disabled" },
         messages: [{ role: "user", content: [
           { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
           { type: "text", text: aiPrompt }
@@ -5164,7 +5177,7 @@ Todos los campos de texto ("title", "ingredients", "steps", "tags") deben estar 
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-5", max_tokens: 1000,
+            model: "claude-sonnet-5", max_tokens: 1000, thinking: { type: "disabled" },
             messages: [{ role: "user", content: finalPrompt }]
           })
         });
@@ -5790,7 +5803,7 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo: {"title":"título c
         if (attempt > 0) await sleep(Math.min(1000 * Math.pow(2, attempt - 1), 8000));
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
+          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: maxTokens, thinking: { type: "disabled" }, messages: [{ role: "user", content: prompt }] })
         });
         if (!response.ok) { lastErr = new Error('http_' + response.status); continue; }
         const data = await response.json();
@@ -6183,7 +6196,7 @@ Los campos "ingredients" y "steps" deben estar escritos completamente en españo
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-5", max_tokens: 1000,
+            model: "claude-sonnet-5", max_tokens: 1000, thinking: { type: "disabled" },
             messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }]
           })
         });
@@ -6290,7 +6303,7 @@ Los campos "ingredients" y "steps" deben estar escritos completamente en españo
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "claude-sonnet-5", max_tokens: 1000,
+            model: "claude-sonnet-5", max_tokens: 1000, thinking: { type: "disabled" },
             messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }]
           })
         });
@@ -6805,8 +6818,22 @@ function ProgramWizardModal({ state, setState, closeModal, toast, openModal }) {
   const [days, setDays] = useState(4);
   const [level, setLevel] = useState('intermediate');
   const [equipment, setEquipment] = useState('gym');
+  const [homeEquipment, setHomeEquipment] = useState(state.profile.homeEquipment || []);
+  const [customEquipmentList, setCustomEquipmentList] = useState(state.profile.customEquipmentList || []);
+  const [newEquipName, setNewEquipName] = useState('');
   const [environment, setEnvironment] = useState('indoor');
   const [generating, setGenerating] = useState(false);
+  const addCustomEquipment = () => {
+    const name = newEquipName.trim();
+    if (!name) return;
+    if (!customEquipmentList.some(c => c.toLowerCase() === name.toLowerCase())) {
+      setCustomEquipmentList(prev => [...prev, name]);
+    }
+    if (!homeEquipment.some(k => k.toLowerCase() === name.toLowerCase())) {
+      setHomeEquipment(prev => [...prev, name]);
+    }
+    setNewEquipName('');
+  };
   const [progress, setProgress] = useState({ current: 0, total: 0 });
   const [error, setError] = useState(null);
 
@@ -6819,12 +6846,26 @@ function ProgramWizardModal({ state, setState, closeModal, toast, openModal }) {
     const progressionHint = weekNumber === 1
       ? (lang === 'en' ? 'This is week 1, start with moderate loads to establish baseline form.' : lang === 'es' ? 'Esta es la semana 1, empieza con cargas moderadas para establecer la base.' : "C'est la semaine 1, commence avec des charges modérées pour poser les bases.")
       : (lang === 'en' ? `This is week ${weekNumber} of ${PROGRAM_WEEKS}, progressively increase load or intensity compared to earlier weeks.` : lang === 'es' ? `Esta es la semana ${weekNumber} de ${PROGRAM_WEEKS}, aumenta progresivamente la carga o intensidad respecto a las semanas anteriores.` : `C'est la semaine ${weekNumber} sur ${PROGRAM_WEEKS}, augmente progressivement la charge ou l'intensité par rapport aux semaines précédentes.`);
+    const equipNamesList = homeEquipment.map(k => {
+      if (HOME_EQUIPMENT_LIST.includes(k)) return t(lang, 'equip_' + k) + (k === 'dumbbells' ? ` (${t(lang, 'equip_dumbbells_hint')})` : '');
+      return k; // custom item added by the user, used as typed
+    }).join(', ');
+    const homeEquipLine = (equipment === 'home' || equipment === 'both')
+      ? (equipNamesList
+          ? (lang === 'en' ? `- Home equipment available: ${equipNamesList}. For any home-based training day, ONLY use exercises doable with this equipment or bodyweight — no gym machines, no barbell/rack, nothing not listed.`
+             : lang === 'es' ? `- Material disponible en casa: ${equipNamesList}. Para cualquier día de entrenamiento en casa, usa SOLO ejercicios realizables con este material o con el peso corporal — nada de máquinas de gimnasio, ni barra olímpica/rack, ni material no listado.`
+             : `- Matériel disponible à la maison : ${equipNamesList}. Pour tout jour d'entraînement à la maison, utilise UNIQUEMENT des exercices réalisables avec ce matériel ou au poids du corps — pas de machines de salle, pas de barre olympique/rack, rien qui ne soit pas dans cette liste.`)
+          : (lang === 'en' ? `- Home equipment available: none. For any home-based training day, base ALL exercises on bodyweight only (push-ups, squats, lunges, planks, etc.).`
+             : lang === 'es' ? `- Material disponible en casa: ninguno. Para cualquier día de entrenamiento en casa, basa TODOS los ejercicios solo en el peso corporal (flexiones, sentadillas, zancadas, plancha, etc.).`
+             : `- Matériel disponible à la maison : aucun. Pour tout jour d'entraînement à la maison, base TOUS les exercices uniquement sur le poids du corps (pompes, squats, fentes, gainage, etc.).`))
+      : '';
     const promptByLang = {
       fr: `Crée UNE semaine (semaine ${weekNumber}) d'un programme d'entraînement de musculation/sport pour une personne avec ce profil :
 - Âge: ${p.age} ans, Genre: ${p.gender === 'F' ? 'Femme' : 'Homme'}, Taille: ${p.height}cm, Poids: ${p.weight}kg
 - Objectif: ${goalLabel}
 - Niveau d'expérience: ${levelLabel}
 - Lieu d'entraînement: ${equipLabel}
+${homeEquipLine}
 - Environnement disponible: ${envLabel} — si un jour de cardio/extérieur est prévu, adapte-le à ce contexte concret (ex: balade/footing autour d'un lac ou en forêt si accès nature, sortie vélo/course en ville sinon, ou juste cardio en salle si environnement intérieur uniquement)
 - Fréquence: ${days} jours par semaine
 
@@ -6838,6 +6879,7 @@ Génère bien les ${days} jours d'entraînement de cette semaine (pas de jours d
 - Goal: ${goalLabel}
 - Experience level: ${levelLabel}
 - Training location: ${equipLabel}
+${homeEquipLine}
 - Available environment: ${envLabel} — if a cardio/outdoor day is planned, adapt it to this real context (e.g. a walk/run around a lake or through a forest if nature access is available, a city bike ride/run otherwise, or just indoor cardio if indoor-only)
 - Frequency: ${days} days per week
 
@@ -6851,6 +6893,7 @@ Generate the full ${days} training days for this week (no rest days in the array
 - Objetivo: ${goalLabel}
 - Nivel de experiencia: ${levelLabel}
 - Lugar de entrenamiento: ${equipLabel}
+${homeEquipLine}
 - Entorno disponible: ${envLabel} — si se planea un día de cardio/exterior, adáptalo a este contexto real (ej: paseo/carrera junto a un lago o por un bosque si hay acceso a naturaleza, salida en bici/carrera urbana si no, o cardio en interior si es solo interior)
 - Frecuencia: ${days} días por semana
 
@@ -6887,7 +6930,7 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo: {"title":"título c
         if (attempt > 0) await sleep(Math.min(1000 * Math.pow(2, attempt - 1), 8000));
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] })
+          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: maxTokens, thinking: { type: "disabled" }, messages: [{ role: "user", content: prompt }] })
         });
         if (!response.ok) { lastErr = new Error('http_' + response.status); continue; }
         const data = await response.json();
@@ -6920,7 +6963,7 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo: {"title":"título c
       const staticTitle = lang === 'en' ? 'Preset training program' : lang === 'es' ? 'Programa de entrenamiento predefinido' : 'Programme d\'entraînement préétabli';
       const fullProgram = { title: staticTitle, daysPerWeek: days, notes: t(lang, 'ai_offline_notice'), weeks: allWeeks };
       const startSnapshot = { date: todayStr(), weight: state.profile.weight || null, measurements: state.measurements.length ? state.measurements[state.measurements.length - 1] : null };
-      setState(s => ({ ...s, trainingProgram: { ...fullProgram, createdAt: todayStr(), currentWeek: 1, equipment, level, startSnapshot } }));
+      setState(s => ({ ...s, trainingProgram: { ...fullProgram, createdAt: todayStr(), currentWeek: 1, equipment, homeEquipment, level, startSnapshot }, profile: { ...s.profile, homeEquipment, customEquipmentList } }));
       setGenerating(false);
       closeModal();
       return;
@@ -6969,7 +7012,7 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo: {"title":"título c
 
       const fullProgram = { title: titleData.title || 'Programme', daysPerWeek: days, notes: titleData.notes || '', weeks: allWeeks };
       const startSnapshot = { date: todayStr(), weight: state.profile.weight || null, measurements: state.measurements.length ? state.measurements[state.measurements.length - 1] : null };
-      setState(s => ({ ...s, trainingProgram: { ...fullProgram, createdAt: todayStr(), currentWeek: 1, equipment, level, startSnapshot } }));
+      setState(s => ({ ...s, trainingProgram: { ...fullProgram, createdAt: todayStr(), currentWeek: 1, equipment, homeEquipment, level, startSnapshot }, profile: { ...s.profile, homeEquipment, customEquipmentList } }));
       setGenerating(false);
       closeModal();
       if (allWeeks.length < PROGRAM_WEEKS) {
@@ -7042,6 +7085,37 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo: {"title":"título c
           <ChoiceCard key={eq.k} fullWidth label={eq.l} selected={equipment === eq.k} onClick={() => setEquipment(eq.k)} />
         ))}
       </div>
+      {(equipment === 'home' || equipment === 'both') && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{t(lang, 'home_equip_q')}</div>
+          <div style={{ fontSize: 11.5, color: '#7d8590', marginBottom: 10, lineHeight: 1.4 }}>{t(lang, 'home_equip_hint')}</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+            {[...HOME_EQUIPMENT_LIST, ...customEquipmentList].map(item => {
+              const isPreset = HOME_EQUIPMENT_LIST.includes(item);
+              const label = isPreset ? t(lang, 'equip_' + item) : item;
+              const active = homeEquipment.includes(item);
+              return (
+                <div key={item} onClick={() => setHomeEquipment(prev => active ? prev.filter(x => x !== item) : [...prev, item])} style={{
+                  padding: '7px 12px', borderRadius: 20, fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+                  background: active ? '#2f9e6e' : '#20242a', color: active ? '#07140f' : '#9aa1ab',
+                  border: active ? 'none' : '1px solid #34393f', fontFamily: "'JetBrains Mono', monospace"
+                }}>{label}</div>
+              );
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              style={{ ...inputStyle, flex: 1 }}
+              type="text"
+              placeholder={t(lang, 'add_equip_ph')}
+              value={newEquipName}
+              onChange={e => setNewEquipName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomEquipment(); } }}
+            />
+            <Btn variant="secondary" onClick={addCustomEquipment}>{t(lang, 'add')}</Btn>
+          </div>
+        </div>
+      )}
       <h3 style={titleStyle}>{t(lang, 'program_environment_q')}</h3>
       <div style={{ marginBottom: 16 }}>
         {[{ k: 'indoor', l: t(lang, 'env_indoor') }, { k: 'nature', l: t(lang, 'env_nature') }, { k: 'city', l: t(lang, 'env_city') }].map(env => (
@@ -7192,7 +7266,7 @@ Sé directo, concreto, lenguaje sencillo. Sin relleno.`
       try {
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 500, messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }] })
+          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 500, thinking: { type: "disabled" }, messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }] })
         });
         const data = await response.json();
         const textBlock = data.content && data.content.find(c => c.type === 'text');
@@ -7392,7 +7466,7 @@ Responde SOLO en JSON válido, sin markdown, sin preámbulo, formato exacto: {"r
       try {
         const response = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 800, messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }] })
+          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 800, thinking: { type: "disabled" }, messages: [{ role: "user", content: promptByLang[lang] || promptByLang.fr }] })
         });
         const data = await response.json();
         const textBlock = data.content && data.content.find(c => c.type === 'text');
@@ -7994,7 +8068,7 @@ function PhotoCompareModal({ photos, closeModal }) {
       const response = await fetch("/api/anthropic", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-5", max_tokens: 400,
+          model: "claude-sonnet-5", max_tokens: 400, thinking: { type: "disabled" },
           messages: [{ role: "user", content: [
             { type: "image", source: { type: "base64", media_type: 'image/jpeg', data: before.image.split(',')[1] } },
             { type: "image", source: { type: "base64", media_type: 'image/jpeg', data: after.image.split(',')[1] } },
@@ -9077,7 +9151,7 @@ export default function EatFitApp() {
         const timeoutId = setTimeout(() => controller.abort(), 9000);
         const testResponse = await fetch("/api/anthropic", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 1, messages: [{ role: "user", content: "test" }] }),
+          body: JSON.stringify({ model: "claude-sonnet-5", max_tokens: 1, thinking: { type: "disabled" }, messages: [{ role: "user", content: "test" }] }),
           signal: controller.signal
         });
         clearTimeout(timeoutId);
